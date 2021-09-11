@@ -35,12 +35,9 @@ X_test_scaled = scaler.transform(X_test)
 
 # matrix inversion to find beta
 OLSbeta = np.linalg.inv(X_train.T @ X_train) @ X_train.T @ y_train
-#print(OLSbeta)
-
+print(OLSbeta)
 # and then make the prediction
 ytildeOLS = X_train @ OLSbeta
-
-'''             Error
 print("Training R2 for OLS")
 print(R2(y_train,ytildeOLS))
 print("Training MSE for OLS")
@@ -50,4 +47,27 @@ print("Test R2 for OLS")
 print(R2(y_test,ypredictOLS))
 print("Test MSE OLS")
 print(MSE(y_test,ypredictOLS))
-'''
+
+# Repeat now for Ridge regression and various values of the regularization parameter
+I = np.eye(p,p)
+# Decide which values of lambda to use
+nlambdas = 20
+MSEPredict = np.zeros(nlambdas)
+MSETrain = np.zeros(nlambdas)
+lambdas = np.logspace(-4, 1, nlambdas)
+for i in range(nlambdas):
+    lmb = lambdas[i]
+    Ridgebeta = np.linalg.inv(X_train.T @ X_train+lmb*I) @ X_train.T @ y_train
+    # and then make the prediction
+    ytildeRidge = X_train @ Ridgebeta
+    ypredictRidge = X_test @ Ridgebeta
+    MSEPredict[i] = MSE(y_test,ypredictRidge)
+    MSETrain[i] = MSE(y_train,ytildeRidge)
+# Now plot the results
+plt.figure()
+plt.plot(np.log10(lambdas), MSETrain, label = 'MSE Ridge train')
+plt.plot(np.log10(lambdas), MSEPredict, 'r--', label = 'MSE Ridge Test')
+plt.xlabel('log10(lambda)')
+plt.ylabel('MSE')
+plt.legend()
+plt.show()
