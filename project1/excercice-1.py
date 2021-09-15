@@ -34,6 +34,8 @@ def create_X(x, y, n ):
 			X[:,q+k] = (x**(i-k))*(y**k)
 	return X
 
+nm.seed(0)
+
 n = 5
 N = 1000
 x = np.sort(np.random.uniform(0, 1, N))
@@ -41,8 +43,5 @@ y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
-z = FrankeFunction(xflat, yflat)
+z = FrankeFunction(xflat, yflat) + 0*np.random.randn(0,1, 100)
 X = create_X(xflat, yflat, n=n)
-
-plt.scatter(xflat,yflat)
-plt.show()
