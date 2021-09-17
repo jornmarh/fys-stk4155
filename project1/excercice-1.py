@@ -34,8 +34,7 @@ def create_X(x, y, n ):
 			X[:,q+k] = (x**(i-k))*(y**k)
 	return X
 
-nm.seed(0)
-
+seed(0)
 n = 5
 N = 1000
 x = np.sort(np.random.uniform(0, 1, N))
@@ -43,5 +42,77 @@ y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
-z = FrankeFunction(xflat, yflat) + 0*np.random.randn(0,1, 100)
+z = FrankeFunction(xflat, yflat) + 0.0*np.random.randn(N*N)
 X = create_X(xflat, yflat, n=n)
+
+beta_OLS = np.linalg.inv(X.T @ X) @ X.T @ z
+ztilde_OLS = X @ beta_OLS
+mse_OLS = MSE(z, ztilde_OLS)
+R2_OLS = R2(z, ztilde_OLS)
+
+print(beta_OLS.reshape(-1,1)); print(mse_OLS); print(R2_OLS);
+
+'''
+Datasett X,z:
+...
+
+
+    #Datastt X_train, X_test, z_train, z_test
+Struc = new Struc(dataset)
+Struc.pred()
+z_train_OLS
+z_test_OLS
+print(MSE, R2 z_train_OLS, z_test_OLS)
+
+ridge.optimize
+z_train_ridge
+z_test_ridge
+print(MSE, R2 z_train_ridge, z_test_ridge)
+
+lasso.optimize
+z_train_lasso
+z_test_lasso
+print(MSE, R2 z_train_lasso, z_test_lasso)
+
+Add also function to do this by SVD algoritm
+
+    #Repeat now for scaled data or new data set.
+
+    #Example
+set1 = new LinReg(train_test_split(X,z))
+
+set1.predict("OLS")
+set1.predict("OLS_SVD")
+set1.predict("Lasso")
+set1.predict("Lasso", "Ridge", "OLS")
+
+
+Do all steps for different data sets
+
+OLS = new OLS()
+OLS.tilde()
+OLS.predict()
+OLS.SVD_calc()
+OLS.MSE()
+OLS.R2()
+
+#Ridge
+ridge = new Ridge()
+ridge.tilde()
+ridge.predict()
+ridge.MSE()
+ridge.R2()
+ridge.optimize()
+
+#lasso
+lasso = new Lasso()
+lasso.tilde()
+lasso.predict()
+lasso.MSE()
+lasso.R2()
+lasso.optimize()
+
+#Repeat for all train, test, scaled and not scaled
+#Calculate MSE and R2 for all
+#Lambda optimization for Ridge, lassso.
+'''
