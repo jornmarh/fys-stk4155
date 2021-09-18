@@ -34,7 +34,7 @@ def create_X(x, y, n ):
 			X[:,q+k] = (x**(i-k))*(y**k)
 	return X
 
-seed(0)
+seed(42)
 n = 5
 N = 1000
 x = np.sort(np.random.uniform(0, 1, N))
