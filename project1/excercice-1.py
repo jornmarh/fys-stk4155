@@ -34,7 +34,44 @@ def create_X(x, y, n ):
 			X[:,q+k] = (x**(i-k))*(y**k)
 	return X
 
-seed(0)
+def ols(X_train, X_test, z_train, z_test, output):
+    beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
+    z_tilde = X_train @ beta
+    z_predict = X_test @ beta
+    mse_tilde = MSE(z_train, z_tilde); R2_tilde = R2(z_train, z_tilde)
+    mse_predict = MSE(z_test, z_predict); R2_predict = R2(z_test, z_predict)
+    if (output == 1): return mse_tilde, mse_predict
+    if (output == 2): return R2_tilde, R2_predict
+
+def noiseTest():
+    noiz = np.linspace(0, 0.15, 50)
+    mse_train = np.zeros(len(noiz))
+    mse_test = np.zeros(len(noiz))
+
+    for i in range(len(noiz)):
+        _z = FrankeFunction(xflat, yflat) + noiz[i]*np.random.randn(N*N)
+        X_train, X_test, z_train, z_test = train_test_split(X,_z, test_size=0.2)
+        scaler = StandardScaler()
+        scaler.fit(X_train)
+        X_train = scaler.transform(X_train); X_test = scaler.transform(X_test)
+        mse_train[i], mse_test[i] = ols(X_train, X_test, z_train, z_test, 1)
+    plt.plot(noiz, mse_train, label='train')
+    plt.plot(noiz, mse_test, label='test')
+    plt.legend()
+    plt.xlabel('Noise')
+    plt.ylabel('MSE')
+    plt.show()
+
+def ridge(X_train, X_test, z_train, z_test, _lambda):
+    _I = np.eye(21, 21)
+    beta= np.linalg.pinv(X_train.T @ X_train + _lambda*_I) @ X_train.T @ z_train
+    z_tilde = X_train @ beta
+    z_predict = X_test @ beta
+    return MSE(z_train, z_tilde), MSE(z_test, z_predict)
+
+#def lasso()
+
+seed(42)
 n = 5
 N = 1000
 x = np.sort(np.random.uniform(0, 1, N))
@@ -42,12 +79,15 @@ y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
-z = FrankeFunction(xflat, yflat) + 0.0*np.random.randn(N*N)
 X = create_X(xflat, yflat, n=n)
+z = FrankeFunction(xflat, yflat) + 0.0*np.random.randn(N*N)
 
-beta_OLS = np.linalg.inv(X.T @ X) @ X.T @ z
-ztilde_OLS = X @ beta_OLS
-mse_OLS = MSE(z, ztilde_OLS)
-R2_OLS = R2(z, ztilde_OLS)
+#noiseTest()
 
-print(beta_OLS.reshape(-1,1)); print(mse_OLS); print(R2_OLS);
+X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
+scaler = StandardScaler()
+scaler.fit(X_train)
+X_train = scaler.transform(X_train); X_test = scaler.transform(X_test)
+
+mse_ridge_train, mse_ridge_test = ridge(X_train, X_test, z_train, z_test, 0.1)
+print(mse_ridge_train); print(mse_ridge_test)
