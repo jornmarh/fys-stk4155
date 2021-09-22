@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from random import random, seed
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
 from sklearn import linear_model
 from sklearn.preprocessing import StandardScaler
 
@@ -17,7 +18,6 @@ def FrankeFunction(x,y):
 	term3 = 0.5*np.exp(-(9*x-7)**2/4.0 - 0.25*((9*y-3)**2))
 	term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
 	return term1 + term2 + term3 + term4
-
 
 def create_X(x, y, n ):
 	if len(x.shape) > 1:
@@ -38,10 +38,9 @@ def ols(X_train, X_test, z_train, z_test, output):
     beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
     z_tilde = X_train @ beta
     z_predict = X_test @ beta
-    mse_tilde = MSE(z_train, z_tilde); R2_tilde = R2(z_train, z_tilde)
-    mse_predict = MSE(z_test, z_predict); R2_predict = R2(z_test, z_predict)
-    if (output == 1): return mse_tilde, mse_predict
-    if (output == 2): return R2_tilde, R2_predict
+    if (output == 1): return MSE(z_train, z_tilde), MSE(z_test, z_predict)
+    if (output == 2): return R2(z_train, z_tilde), R2(z_test, z_predict)
+    if (output == 3): return mean_squared_error(z_train, z_tilde), mean_squared_error(z_test, z_predict)
 
 def noiseTest():
     noiz = np.linspace(0, 0.15, 50)
@@ -69,25 +68,33 @@ def ridge(X_train, X_test, z_train, z_test, _lambda):
     z_predict = X_test @ beta
     return MSE(z_train, z_tilde), MSE(z_test, z_predict)
 
-#def lasso()
-
 seed(42)
 n = 5
+maxdegree = 5
 N = 1000
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
-X = create_X(xflat, yflat, n=n)
-z = FrankeFunction(xflat, yflat) + 0.0*np.random.randn(N*N)
+z = FrankeFunction(xflat, yflat) + 0.5*np.random.randn(N*N)
 
-#noiseTest()
+mse_tilde_list = np.zeros(maxdegree)
+mse_predict_list = np.zeros(maxdegree)
+for i in range(0, maxdegree):
+    X = create_X(xflat, yflat, i)
+    X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
+    scaler = StandardScaler()
+    scaler.fit(X_train)
+    X_train = scaler.transform(X_train)
+    X_test = scaler.transform(X_test)
 
-X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
-scaler = StandardScaler()
-scaler.fit(X_train)
-X_train = scaler.transform(X_train); X_test = scaler.transform(X_test)
+    mse_tilde, mse_predict = ols(X_train, X_test, z_train, z_test, 1)
+    mse_tilde_list[i] = mse_tilde
+    mse_predict_list[i] = mse_predict
 
-mse_ridge_train, mse_ridge_test = ridge(X_train, X_test, z_train, z_test, 0.1)
-print(mse_ridge_train); print(mse_ridge_test)
+xaxis = np.arange(maxdegree)
+plt.plot(xaxis, mse_tilde_list, label='train')
+plt.plot(xaxis, mse_predict_list, label='test')
+plt.legend()
+plt.show()
