@@ -22,7 +22,7 @@ def FrankeFunction(x,y):
     return term1 + term2 + term3 + term4
 
 
-z = FrankeFunction(x, y)
+z = FrankeFunction(x, y) + 0.5*np.random.randn(len(x[0]))
 
 # Plot the surface.
 surf = ax.plot_surface(x, y, z, cmap=cm.coolwarm,
