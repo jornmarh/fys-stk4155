@@ -76,26 +76,26 @@ def noiseTest():
 seed(42)
 n = 5
 maxdegree = 15
-N = 20
+N = 25
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
-z = FrankeFunction(xflat, yflat) + 0.1*np.random.randn(N*N)
-
+z = FrankeFunction(xflat, yflat) + 0.4*np.random.randn(N*N)
 
 #Test complexity
-MSE_own = np.zeros(shape=(maxdegree,2))
-MSE_scikit = np.zeros(shape=(maxdegree,2))
-MSE_original = np.zeros(shape=(maxdegree,2))
+m = np.zeros(maxdegree)
+mseTrain = np.zeros(maxdegree)
+b = np.zeros(maxdegree)
+v = np.zeros(maxdegree)
 degree = np.zeros(maxdegree)
 mse_degree = np.zeros(maxdegree)
 bias_degree = np.zeros(maxdegree)
 var_degree = np.zeros(maxdegree)
 nBootstrap = 100
 for i in range(maxdegree):
-    degree[i] = i+1
+    degree[i] = i
     X = create_X(xflat, yflat, n=i)
     X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
     #Scale own
@@ -113,23 +113,9 @@ for i in range(maxdegree):
     z_test_scikit = scaler_z.transform(z_test.reshape(-1,1))
     z_train_scikit = np.ravel(z_train_scikit)
     z_test_scikit = np.ravel(z_test_scikit)
-    if (i == 100):
-        print("Original")
-        print(z_train)
-        #print("Own")
-        #print(X_test_own)
-        print("Scikit")
-        print(z_train_scikit)
-        #print("Mean")
-        #print(np.mean(X_train_own, axis=0))
-        #print(np.mean(z_test_scikit, axis=0))
-        #print("Std")
-        #print(np.std(X_train_own, axis=0))
-        #print(np.std(z_test_scikit, axis=0))
 
-    MSE_scikit[i] = ols(X_train_scikit, X_test_scikit, z_train_scikit, z_test_scikit, 1)
-
-    print("Polynomial degree    MSE     Bias    Var")
+    #Bootstrap
+    print("Polynomial degree    MSE     Bias    Var     Bias+Var+noise")
     mse_bootstap = np.zeros(nBootstrap)
     bias_bootstrap = np.zeros(nBootstrap)
     var_bootstrap = np.zeros(nBootstrap)
@@ -137,20 +123,39 @@ for i in range(maxdegree):
         X_, z_ = resample(X_train_scikit, z_train_scikit)
         beta_ols = np.linalg.pinv(X_.T @ X_) @ X_.T @ z_
         zPredict_ols = X_test_scikit @ beta_ols
-        mse_bootstap[boot] = MSE(z_test_scikit, zPredict_ols)
+        mse_bootstap[boot] = mean_squared_error(z_test_scikit, zPredict_ols)
         bias_bootstrap[boot] = np.mean((z_test_scikit - np.mean(zPredict_ols))**2)
         var_bootstrap[boot] = np.mean(np.var(zPredict_ols))
     mse_degree[i] = np.mean(mse_bootstap)
     bias_degree[i] = np.mean(bias_bootstrap)
     var_degree[i] = np.mean(var_bootstrap)
-    print("{}   {}   {}  {}".format(degree[i], mse_degree[i], bias_degree[i], var_degree[i]))
-    print(MSE_scikit[i][:])
-
+    print("{}   {}   {}     {}     {}".format(degree[i], mse_degree[i], bias_degree[i], var_degree[i], bias_degree[i]+var_degree[i]))
 plt.plot(degree, mse_degree, label="mse")
 plt.plot(degree, bias_degree, label="bias")
 plt.plot(degree, var_degree, label="var")
 plt.legend()
 plt.show()
+
+#complexity
+'''
+    beta_O = np.linalg.pinv(X_train_scikit.T @ X_train_scikit) @ X_train_scikit.T @ z_train_scikit
+    z_tildE = X_train_scikit @ beta_O
+    z_predicT = X_test_scikit @ beta_O
+    mse_test = mean_squared_error(z_test_scikit, z_predicT)
+    bias_test = np.mean((z_test_scikit - np.mean(z_predicT))**2)
+    var_test = np.mean(np.var(z_predicT))
+    print(mse_test, bias_test, var_test)
+    m[i] = mse_test
+    b[i] = bias_test
+    v[i] = var_test
+plt.plot(degree, m, label='MSE')
+plt.plot(degree, b, label='Bias')
+plt.plot(degree, v, label='Var')
+plt.legend()
+plt.show()
+'''
+
+#CVD
 '''
 X = create_X(xflat, yflat, n=n)
 k = 5
