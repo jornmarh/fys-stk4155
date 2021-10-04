@@ -53,26 +53,19 @@ def ridge(X_train, X_test, z_train, z_test, _lambda):
     z_tilde = X_train @ beta
     z_predict = X_test @ beta
     return MSE(z_train, z_tilde), MSE(z_test, z_predict)
-'''
-def noiseTest():
-    noiz = np.linspace(0, 0.15, 50)
-    mse_train = np.zeros(len(noiz))
-    mse_test = np.zeros(len(noiz))
 
-    for i in range(len(noiz)):
-        _z = FrankeFunction(xflat, yflat) + noiz[i]*np.random.randn(N*N)
-        X_train, X_test, z_train, z_test = train_test_split(X,_z, test_size=0.2)
-        scaler = StandardScaler()
-        scaler.fit(X_train)
-        X_train = scaler.transform(X_train); X_test = scaler.transform(X_test)
-        mse_train[i], mse_test[i] = ols(X_train, X_test, z_train, z_test, 1)
-    plt.plot(noiz, mse_train, label='train')
-    plt.plot(noiz, mse_test, label='test')
-    plt.legend()
-    plt.xlabel('Noise')
-    plt.ylabel('MSE')
-    plt.show()
-'''
+def scale(X_train, X_test, z_train, z_test):
+    scaler = StandardScaler() #Utilizing scikit's standardscaler
+
+    scaler_x = scaler.fit(X_train) #Scaling x-data
+    X_train_scikit = scaler_x.transform(X_train)
+    X_test_scikit = scaler_x.transform(X_test)
+
+    scaler_z = scaler.fit(z_train.reshape(-1,1)) #Scaling z-data
+    z_train_scikit = scaler_z.transform(z_train.reshape(-1,1)).ravel()
+    z_test_scikit = scaler_z.transform(z_test.reshape(-1,1)).ravel()
+
+    return X_train_scikit, X_test_scikit, z_train_scikit, z_test_scikit
 
 #Initilize data
 seed(42)
@@ -86,117 +79,100 @@ xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
 z = FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N)
 
-#Initilize arrays and variables for evaluation tests
-degrees = np.zeros(maxdegree) #Array of degrees for plotting results
-
-#Bootstrap analysis, change to True to do bootstrap
-bootstrap = False
-nBootstrap = 1000
-mse_ols_bootstrap = np.zeros(maxdegree)
+#Bootstrap analysis
+bootstrap = True #Change to True to perform bootstrap analysis for various polynomial degrees
+nBootstrap = 1000 #Number of bootstraps
 error_ols_bootstrap = np.zeros(maxdegree)
 bias_ols_bootstrap = np.zeros(maxdegree)
 var_ols_bootstrap = np.zeros(maxdegree)
 
+#Cross-validation
+cvd = True #Change to True to perform cross validation analysis for various polynomial degrees.
+k = 10
+error_ols_cvd = np.zeros(maxdegree)
+
+complexity = False #Change to True to perform simple analysis depending on polynomial degree
+e = np.zeros(maxdegree)
+b = np.zeros(maxdegree)
+v = np.zeros(maxdegree)
+
+#Complexity analysis
+degrees = np.zeros(maxdegree)
 for i in range(maxdegree):
-    degrees[i] = i
-
-    #Create and scale data per degree
+    #Crate design matrix for every degree until maxdegree
+    degrees[i] = i+1
     X = create_X(xflat, yflat, i)
-    X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
+    print("\n", "Degree: ", degrees[i])
 
-    scaler = StandardScaler() #Utilizing scikit's standardscaler
+    #Perform cvd analysis
+    if(cvd == True):
+        kfold = KFold(n_splits=k) #Use the KFold split method from Scikit-learn
+        split=0 #Variable to keep track of the specific split
+        error_ols_cvd_split = np.zeros(k) #List of errors for each split
+        print("CVD")
+        for train_inds, test_inds in kfold.split(X):
+            #Split and scale data
+            xtrain = X[train_inds]; ztrain = z[train_inds]
+            xtest = X[test_inds]; ztest = z[test_inds]
+            Xtrain, Xtest, ztrain, ztest = scale(xtrain, xtest, ztrain, ztest)
 
-    scaler_x = scaler.fit(X_train) #Scaling x-data
-    X_train_scikit = scaler_x.transform(X_train)
-    X_test_scikit = scaler_x.transform(X_test)
+            #OLS prediction
+            beta_cvd = np.linalg.pinv(Xtrain.T @ Xtrain) @ Xtrain.T @ ztrain
+            zPredict_cvd = Xtest @ beta_cvd
 
-    scaler_z = scaler.fit(z_train.reshape(-1,1)) #Scaling z-data
-    z_train_scikit = scaler_z.transform(z_train.reshape(-1,1)).ravel()
-    z_test_scikit = scaler_z.transform(z_test.reshape(-1,1)).ravel()
+            #State error of split
+            error = np.mean((ztest - zPredict_cvd)**2)
+            #error = mean_squared_error(ztest, zPredict_cvd)
+            print("split: ", split, "Error: ", error)
+            error_ols_cvd_split[split] = error
+            split+=1
+
+        #Average error of all splits per degree
+        error_ols_cvd[i] = np.mean(error_ols_cvd_split)
+        print("Average CVD error: ", error_ols_cvd[i])
 
     #Bootstrap
-    if (bootstrap = True):
-        zPredict_bootstrap = np.empty((z_test_scikit.shape[0], nBootstrap));
+    if (bootstrap == True):
+        X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
+        X_train, X_test, z_train, z_test = scale(X_train, X_test, z_train, z_test)
+        zPredict_bootstrap = np.empty((z_test.shape[0], nBootstrap)) #Array of predicted z for each bootstrap
         for boot in range(nBootstrap):
-            X_, z_ = resample(X_train_scikit, z_train_scikit) #Scikit-learns bootstrap method
-            beta_ols = np.linalg.pinv(X_.T @ X_) @ X_.T @ z_
-            zPredict_bootstrap[:,boot] = X_test_scikit @ beta_ols #OLS prediction of the same test data for every bootstrap
-        print("Degree: ", degrees[i])
-        print("\n", "zPredict_bootstrap")
-        print(zPredict_bootstrap)
-        print("\n", "z_test_scikit")
-        print(z_test_scikit)
-        print("")
+            X_, z_ = resample(X_train, z_train) #Scikit-learn's bootstrap method
+            beta_bootstrap = np.linalg.pinv(X_.T @ X_) @ X_.T @ z_
+            zPredict_bootstrap[:,boot] = X_test @ beta_bootstrap #OLS prediction of the same test data for every bootstrap
 
         #Bootstrap results
-        error_ols_bootstrap[i] = np.mean( np.mean((z_test_scikit.reshape(-1,1) - zPredict_bootstrap)**2, axis=1, keepdims=True) )
-        bias_ols_bootstrap[i] = np.mean( (z_test_scikit.reshape(-1,1) - np.mean(zPredict_bootstrap, axis=1, keepdims=True))**2 )
+        error_ols_bootstrap[i] = np.mean( np.mean((z_test.reshape(-1,1) - zPredict_bootstrap)**2, axis=1, keepdims=True) )
+        bias_ols_bootstrap[i] = np.mean( (z_test.reshape(-1,1) - np.mean(zPredict_bootstrap, axis=1, keepdims=True))**2 )
         var_ols_bootstrap[i] = np.mean( np.var(zPredict_bootstrap, axis=1, keepdims=True) )
 
-        print("Polynomial degree    MSE     Bias    Var") #Print bootstrap result
+        print("Bootstrap")
+        print("degree    error     Bias    Var")
         print("{}   {}   {}     {}".format(degrees[i], error_ols_bootstrap[i], bias_ols_bootstrap[i], var_ols_bootstrap[i]))
-        print("\n")
 
-#complexity
-'''
-    beta_O = np.linalg.pinv(X_train_scikit.T @ X_train_scikit) @ X_train_scikit.T @ z_train_scikit
-    z_tildE = X_train_scikit @ beta_O
-    z_predicT = X_test_scikit @ beta_O
-    mse_test = mean_squared_error(z_test_scikit, z_predicT)
-    bias_test = np.mean((z_test_scikit - np.mean(z_predicT))**2)
-    var_test = np.mean(np.var(z_predicT))
-    print(mse_test, bias_test, var_test)
-    m[i] = mse_test
-    b[i] = bias_test
-    v[i] = var_test
-plt.plot(degree, m, label='MSE')
-plt.plot(degree, b, label='Bias')
-plt.plot(degree, v, label='Var')
-plt.legend()
-plt.show()
-'''
+    if(complexity == True): #Feil (Fiks senere)
+        beta_O = np.linalg.pinv(X_train_scikit.T @ X_train_scikit) @ X_train_scikit.T @ z_train_scikit
+        z_tildE = X_train_scikit @ beta_O
+        z_predicT = X_test_scikit @ beta_O
+        err_test = np.mean((z_test_scikit - z_predicT)**2)
+        bias_test = np.mean((z_test_scikit - np.mean(z_predicT))**2)
+        var_test = np.mean(np.var(z_predicT))
+        print(err_test, bias_test, var_test)
+        e[i] = err_test
+        b[i] = bias_test
+        v[i] = var_test
 
-#CVD
-'''
-X = create_X(xflat, yflat, n=n)
-k = 5
-kfold = KFold(n_splits=k)
-
-meanErrors = np.zeros(k)
-i = 0
-print("Mean squared error per kfold: ")
-for train_inds, test_inds in kfold.split(X):
-    xtrain = X[train_inds]
-    ztrain = z[train_inds]
-    xtest = X[test_inds]
-    ztest = z[test_inds]
-
-    scaler_x = scaler.fit(xtrain)
-    xtrain = scaler_x.transform(xtrain)
-    xtest = scaler_x.transform(xtest)
-
-    beta = np.linalg.pinv(xtrain.T @ xtrain) @ xtrain.T @ ztrain
-    zPredict = xtest @ beta
-
-    meanerr = mean_squared_error(ztest, zPredict)
-    print(meanerr)
-    meanErrors[i] = meanerr
-    i+=1
-
-print("Average mse: {}".format(np.mean(meanErrors)))
-
-plt.plot(degree, bias_degree, label='bias')
-plt.plot(degree, var_degree, label='var')
-plt.plot(degree, mse_degree, label='MSE')
-plt.xlabel('Degree')
-plt.ylabel('error')
-plt.legend()
-plt.show()
-'''
-
-if (bootstrap = True):
+#Plot results from bootstrap
+if (bootstrap == True):
     plt.plot(degrees, error_ols_bootstrap, label="error")
     plt.plot(degrees, bias_ols_bootstrap, label="bias")
     plt.plot(degrees, var_ols_bootstrap, label="var")
+    plt.legend()
+    plt.show()
+#Plot results from complexity
+if (complexity == True):
+    plt.plot(degrees, e, label='error')
+    plt.plot(degrees, b, label='Bias')
+    plt.plot(degrees, v, label='Var')
     plt.legend()
     plt.show()
