@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from random import random, seed
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
@@ -23,7 +24,7 @@ def FrankeFunction(x,y):
 	term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
 	return term1 + term2 + term3 + term4
 
-def create_X(x, y, n ):
+def create_X(x, y, n):
 	if len(x.shape) > 1:
 		x = np.ravel(x)
 		y = np.ravel(y)
@@ -52,7 +53,7 @@ def ridge(X_train, X_test, z_train, z_test, _lambda):
     z_tilde = X_train @ beta
     z_predict = X_test @ beta
     return MSE(z_train, z_tilde), MSE(z_test, z_predict)
-
+'''
 def noiseTest():
     noiz = np.linspace(0, 0.15, 50)
     mse_train = np.zeros(len(noiz))
@@ -71,70 +72,70 @@ def noiseTest():
     plt.xlabel('Noise')
     plt.ylabel('MSE')
     plt.show()
+'''
 
 #Initilize data
 seed(42)
 n = 5
-maxdegree = 15
-N = 25
+maxdegree = 13
+N = 20
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
-z = FrankeFunction(xflat, yflat) + 0.4*np.random.randn(N*N)
+z = FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N)
 
-#Test complexity
-m = np.zeros(maxdegree)
-mseTrain = np.zeros(maxdegree)
-b = np.zeros(maxdegree)
-v = np.zeros(maxdegree)
-degree = np.zeros(maxdegree)
-mse_degree = np.zeros(maxdegree)
-bias_degree = np.zeros(maxdegree)
-var_degree = np.zeros(maxdegree)
-nBootstrap = 100
+#Initilize arrays and variables for evaluation tests
+degrees = np.zeros(maxdegree) #Array of degrees for plotting results
+
+#Bootstrap analysis, change to True to do bootstrap
+bootstrap = False
+nBootstrap = 1000
+mse_ols_bootstrap = np.zeros(maxdegree)
+error_ols_bootstrap = np.zeros(maxdegree)
+bias_ols_bootstrap = np.zeros(maxdegree)
+var_ols_bootstrap = np.zeros(maxdegree)
+
 for i in range(maxdegree):
-    degree[i] = i
-    X = create_X(xflat, yflat, n=i)
+    degrees[i] = i
+
+    #Create and scale data per degree
+    X = create_X(xflat, yflat, i)
     X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
-    #Scale own
-    X_train_own = (X_train - np.mean(X_train))/np.std(X_train)
-    X_test_own = (X_test - np.mean(X_test))/np.std(X_test)
-    z_train_own = (z_train - np.mean(z_train))/np.std(z_train)
-    z_test_own = (z_test - np.mean(z_test))/np.std(z_test)
-    #scale scikit
-    scaler = StandardScaler()
-    scaler_x = scaler.fit(X_train)
+
+    scaler = StandardScaler() #Utilizing scikit's standardscaler
+
+    scaler_x = scaler.fit(X_train) #Scaling x-data
     X_train_scikit = scaler_x.transform(X_train)
     X_test_scikit = scaler_x.transform(X_test)
-    scaler_z = scaler.fit(z_train.reshape(-1,1))
-    z_train_scikit = scaler_z.transform(z_train.reshape(-1,1))
-    z_test_scikit = scaler_z.transform(z_test.reshape(-1,1))
-    z_train_scikit = np.ravel(z_train_scikit)
-    z_test_scikit = np.ravel(z_test_scikit)
+
+    scaler_z = scaler.fit(z_train.reshape(-1,1)) #Scaling z-data
+    z_train_scikit = scaler_z.transform(z_train.reshape(-1,1)).ravel()
+    z_test_scikit = scaler_z.transform(z_test.reshape(-1,1)).ravel()
 
     #Bootstrap
-    print("Polynomial degree    MSE     Bias    Var     Bias+Var+noise")
-    mse_bootstap = np.zeros(nBootstrap)
-    bias_bootstrap = np.zeros(nBootstrap)
-    var_bootstrap = np.zeros(nBootstrap)
-    for boot in range(nBootstrap):
-        X_, z_ = resample(X_train_scikit, z_train_scikit)
-        beta_ols = np.linalg.pinv(X_.T @ X_) @ X_.T @ z_
-        zPredict_ols = X_test_scikit @ beta_ols
-        mse_bootstap[boot] = mean_squared_error(z_test_scikit, zPredict_ols)
-        bias_bootstrap[boot] = np.mean((z_test_scikit - np.mean(zPredict_ols))**2)
-        var_bootstrap[boot] = np.mean(np.var(zPredict_ols))
-    mse_degree[i] = np.mean(mse_bootstap)
-    bias_degree[i] = np.mean(bias_bootstrap)
-    var_degree[i] = np.mean(var_bootstrap)
-    print("{}   {}   {}     {}     {}".format(degree[i], mse_degree[i], bias_degree[i], var_degree[i], bias_degree[i]+var_degree[i]))
-plt.plot(degree, mse_degree, label="mse")
-plt.plot(degree, bias_degree, label="bias")
-plt.plot(degree, var_degree, label="var")
-plt.legend()
-plt.show()
+    if (bootstrap = True):
+        zPredict_bootstrap = np.empty((z_test_scikit.shape[0], nBootstrap));
+        for boot in range(nBootstrap):
+            X_, z_ = resample(X_train_scikit, z_train_scikit) #Scikit-learns bootstrap method
+            beta_ols = np.linalg.pinv(X_.T @ X_) @ X_.T @ z_
+            zPredict_bootstrap[:,boot] = X_test_scikit @ beta_ols #OLS prediction of the same test data for every bootstrap
+        print("Degree: ", degrees[i])
+        print("\n", "zPredict_bootstrap")
+        print(zPredict_bootstrap)
+        print("\n", "z_test_scikit")
+        print(z_test_scikit)
+        print("")
+
+        #Bootstrap results
+        error_ols_bootstrap[i] = np.mean( np.mean((z_test_scikit.reshape(-1,1) - zPredict_bootstrap)**2, axis=1, keepdims=True) )
+        bias_ols_bootstrap[i] = np.mean( (z_test_scikit.reshape(-1,1) - np.mean(zPredict_bootstrap, axis=1, keepdims=True))**2 )
+        var_ols_bootstrap[i] = np.mean( np.var(zPredict_bootstrap, axis=1, keepdims=True) )
+
+        print("Polynomial degree    MSE     Bias    Var") #Print bootstrap result
+        print("{}   {}   {}     {}".format(degrees[i], error_ols_bootstrap[i], bias_ols_bootstrap[i], var_ols_bootstrap[i]))
+        print("\n")
 
 #complexity
 '''
@@ -192,3 +193,10 @@ plt.ylabel('error')
 plt.legend()
 plt.show()
 '''
+
+if (bootstrap = True):
+    plt.plot(degrees, error_ols_bootstrap, label="error")
+    plt.plot(degrees, bias_ols_bootstrap, label="bias")
+    plt.plot(degrees, var_ols_bootstrap, label="var")
+    plt.legend()
+    plt.show()
