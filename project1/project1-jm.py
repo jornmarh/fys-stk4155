@@ -70,7 +70,7 @@ def scale(X_train, X_test, z_train, z_test):
 #Initilize data
 seed(42)
 n = 5
-maxdegree = 13
+maxdegree = 11
 N = 20
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
@@ -79,7 +79,13 @@ xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
 z = FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N)
 
-#Bootstrap analysis
+#Polynomial analysis
+complexity = False #Change to True to perform simple analysis of polynomial degree
+e = np.zeros(maxdegree)
+b = np.zeros(maxdegree)
+v = np.zeros(maxdegree)
+
+#Bootstrap
 bootstrap = True #Change to True to perform bootstrap analysis for various polynomial degrees
 nBootstrap = 1000 #Number of bootstraps
 error_ols_bootstrap = np.zeros(maxdegree)
@@ -91,11 +97,6 @@ cvd = True #Change to True to perform cross validation analysis for various poly
 k = 10
 error_ols_cvd = np.zeros(maxdegree)
 
-complexity = False #Change to True to perform simple analysis depending on polynomial degree
-e = np.zeros(maxdegree)
-b = np.zeros(maxdegree)
-v = np.zeros(maxdegree)
-
 #Complexity analysis
 degrees = np.zeros(maxdegree)
 for i in range(maxdegree):
@@ -106,9 +107,9 @@ for i in range(maxdegree):
 
     #Perform cvd analysis
     if(cvd == True):
-        kfold = KFold(n_splits=k) #Use the KFold split method from Scikit-learn
+        kfold = KFold(n_splits=k, shuffle=True) #Use the KFold split method from Scikit-learn
         split=0 #Variable to keep track of the specific split
-        error_ols_cvd_split = np.zeros(k) #List of errors for each split
+        error_ols_cvd_split = np.zeros(k) #Array of errors for every split
         print("CVD")
         for train_inds, test_inds in kfold.split(X):
             #Split and scale data
@@ -119,11 +120,10 @@ for i in range(maxdegree):
             #OLS prediction
             beta_cvd = np.linalg.pinv(Xtrain.T @ Xtrain) @ Xtrain.T @ ztrain
             zPredict_cvd = Xtest @ beta_cvd
-
-            #State error of split
+            #Print error per split
             error = np.mean((ztest - zPredict_cvd)**2)
             #error = mean_squared_error(ztest, zPredict_cvd)
-            print("split: ", split, "Error: ", error)
+            print("split: ", split+1, "Error: ", error)
             error_ols_cvd_split[split] = error
             split+=1
 
