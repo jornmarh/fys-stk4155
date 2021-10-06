@@ -86,7 +86,7 @@ b = np.zeros(maxdegree)
 v = np.zeros(maxdegree)
 
 #Bootstrap
-bootstrap = False #Change to True to perform bootstrap analysis for various polynomial degrees
+bootstrap = True #Change to True to perform bootstrap analysis for various polynomial degrees
 nBootstrap = 1000 #Number of bootstraps
 error_ols_bootstrap = np.zeros(maxdegree)
 bias_ols_bootstrap = np.zeros(maxdegree)
@@ -101,10 +101,10 @@ error_ols_cvd = np.zeros(maxdegree)
 degrees = np.zeros(maxdegree)
 for i in range(maxdegree):
     #Crate design matrix for every degree until maxdegree
-    degrees[i] = i
+    degrees[i] = i+1
     X = create_X(xflat, yflat, i)
-
     print("\n", "Degree: ", degrees[i])
+
     #Perform cvd analysis
     if(cvd == True):
         kfold = KFold(n_splits=k, shuffle=True) #Use the KFold split method from Scikit-learn
@@ -118,39 +118,33 @@ for i in range(maxdegree):
             Xtrain, Xtest, ztrain, ztest = scale(xtrain, xtest, ztrain, ztest)
 
             #OLS prediction
-            beta_ols_cvd = np.linalg.pinv(Xtrain.T @ Xtrain) @ Xtrain.T @ ztrain
-            zPredict_ols_cvd = Xtest @ beta_ols_cvd
-
-            error = np.mean((ztest - zPredict_ols_cvd)**2)
+            beta_cvd = np.linalg.pinv(Xtrain.T @ Xtrain) @ Xtrain.T @ ztrain
+            zPredict_cvd = Xtest @ beta_cvd
+            #Print error per split
+            error = np.mean((ztest - zPredict_cvd)**2)
             #error = mean_squared_error(ztest, zPredict_cvd)
             print("split: ", split+1, "Error: ", error)
             error_ols_cvd_split[split] = error
             split+=1
 
-            #Ridge
-
         #Average error of all splits per degree
         error_ols_cvd[i] = np.mean(error_ols_cvd_split)
-        print("Average CVD OLS error: ", error_ols_cvd[i])
+        print("Average CVD error: ", error_ols_cvd[i])
 
     #Bootstrap
     if (bootstrap == True):
         X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
         X_train, X_test, z_train, z_test = scale(X_train, X_test, z_train, z_test)
-        zPredict_ols_bootstrap = np.empty((z_test.shape[0], nBootstrap)) #Array of predicted z for each bootstrap
+        zPredict_bootstrap = np.empty((z_test.shape[0], nBootstrap)) #Array of predicted z for each bootstrap
         for boot in range(nBootstrap):
             X_, z_ = resample(X_train, z_train) #Scikit-learn's bootstrap method
-
-            #OLS
-            beta_ols_bootstrap = np.linalg.pinv(X_.T @ X_) @ X_.T @ z_
-            zPredict_ols_bootstrap[:,boot] = X_test @ beta_ols_bootstrap #OLS prediction of the same test data for every bootstrap
-
-            #Ridge
+            beta_bootstrap = np.linalg.pinv(X_.T @ X_) @ X_.T @ z_
+            zPredict_bootstrap[:,boot] = X_test @ beta_bootstrap #OLS prediction of the same test data for every bootstrap
 
         #Bootstrap results
-        error_ols_bootstrap[i] = np.mean( np.mean((z_test.reshape(-1,1) - zPredict_ols_bootstrap)**2, axis=1, keepdims=True) )
-        bias_ols_bootstrap[i] = np.mean( (z_test.reshape(-1,1) - np.mean(zPredict_ols_bootstrap, axis=1, keepdims=True))**2 )
-        var_ols_bootstrap[i] = np.mean( np.var(zPredict_ols_bootstrap, axis=1, keepdims=True) )
+        error_ols_bootstrap[i] = np.mean( np.mean((z_test.reshape(-1,1) - zPredict_bootstrap)**2, axis=1, keepdims=True) )
+        bias_ols_bootstrap[i] = np.mean( (z_test.reshape(-1,1) - np.mean(zPredict_bootstrap, axis=1, keepdims=True))**2 )
+        var_ols_bootstrap[i] = np.mean( np.var(zPredict_bootstrap, axis=1, keepdims=True) )
 
         print("Bootstrap")
         print("degree    error     Bias    Var")
