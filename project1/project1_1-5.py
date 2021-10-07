@@ -57,14 +57,13 @@ def scale(X_train, X_test, z_train, z_test):
 seed(42)
 n = 5
 maxdegree = 11
-N = 1000
+N = 20
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
 z = FrankeFunction(xflat, yflat) + 0.5*np.random.randn(N*N)
-
 
 
 #Bootstrap
@@ -96,7 +95,7 @@ error_lasso_cvd = np.zeros(maxdegree)
 lmd = 0.01
 
 #Complexity analysis
-complexity = False
+complexity = True
 if (complexity == True):
     print("     Lambda = ", lmd, "\n")
     degrees = np.zeros(maxdegree)
@@ -116,7 +115,6 @@ if (complexity == True):
             error_lasso_cvd_split = np.zeros(k)
             print("CVD")
             for train_inds, test_inds in kfold.split(X):
-                print(train_inds.shape)
                 #Split and scale data
                 xtrain = X[train_inds]; ztrain = z[train_inds]
                 xtest = X[test_inds]; ztest = z[test_inds]
@@ -209,3 +207,13 @@ if (complexity == True):
 #Plot results from bootstrap
 
 #Plot cvd
+if (cvd == True):
+    plt.figure()
+    plt.title("Lambda = {}".format(lmd))
+    plt.xlabel("Polynomial degree")
+    plt.ylabel("Mean squared error")
+    plt.plot(degrees, error_ols_cvd, label="OLS")
+    plt.plot(degrees, error_ridge_cvd, label="Ridge")
+    plt.plot(degrees, error_lasso_cvd, label="Lasso")
+    plt.legend()
+    plt.show()

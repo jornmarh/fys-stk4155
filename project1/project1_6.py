@@ -41,15 +41,26 @@ def scale(X_train, X_test, z_train, z_test):
     return X_train_scikit, X_test_scikit, z_train_scikit, z_test_scikit
 
 #Initilize data
-terrain1 = imread('SRTM_data_Norway_1.tlf')
+terrain1 = imread("SRTM_data_Norway_1.tif")
+'''
 plt.figure()
 plt.title('Terrain over Norway')
 plt.imshow(terrain1, cmap='gray')
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.show()
+'''
 
+N = 20
+maxdegree = 10
+z = terrain1[:N,:N].ravel()
+x = np.linspace(0,1, N)
+y = np.linspace(0,1, N)
+x_mesh, y_mesh = np.meshgrid(x,y)
+xflat = x_mesh.ravel()
+yflat = y_mesh.ravel()
 
+X = create_X(xflat, yflat, 5)
 
 #Bootstrap
 bootstrap = False #Change to True to perform bootstrap analysis for various polynomial degrees
@@ -68,7 +79,7 @@ if (bootstrap == True):
     var_lasso_bootstrap = np.zeros(maxdegree)
 
 #Cross-validation
-cvd = False #Change to True to perform cross validation analysis for various polynomial degrees.
+cvd = True #Change to True to perform cross validation analysis for various polynomial degrees.
 if (cvd == True):
     k = 10
     error_ols_cvd = np.zeros(maxdegree)
@@ -78,7 +89,7 @@ if (cvd == True):
 #Hyperparameter
 lmd = 0.01
 
-complexity = False
+complexity = True
 #Complexity analysis
 if (complexity == True):
     print("     Lambda = ", lmd, "\n")
@@ -101,26 +112,25 @@ if (complexity == True):
                 #Split and scale data
                 xtrain = X[train_inds]; ztrain = z[train_inds]
                 xtest = X[test_inds]; ztest = z[test_inds]
-                Xtrain, Xtest, ztrain, ztest = scale(xtrain, xtest, ztrain, ztest)
+                xtrain, xtest, ztrain, ztest = scale(xtrain, xtest, ztrain, ztest)
 
                 #OLS prediction
-                beta_ols_cvd = np.linalg.pinv(Xtrain.T @ Xtrain) @ Xtrain.T @ ztrain
-                zPredict_ols_cvd = Xtest @ beta_ols_cvd
+                beta_ols_cvd = np.linalg.pinv(xtrain.T @ xtrain) @ xtrain.T @ ztrain
+                zPredict_ols_cvd = xtest @ beta_ols_cvd
 
                 #ridge
-                _I = np.eye(Xtrain.shape[1], Xtrain.shape[1])
-                beta_ridge_cvd = np.linalg.pinv(Xtrain.T @ Xtrain + lmd*_I) @Xtrain.T @ ztrain
-                zPredict_ridge_cvd = Xtest @ beta_ridge_cvd
+                _I = np.eye(xtrain.shape[1], xtrain.shape[1])
+                beta_ridge_cvd = np.linalg.pinv(xtrain.T @ xtrain + lmd*_I) @xtrain.T @ ztrain
+                zPredict_ridge_cvd = xtest @ beta_ridge_cvd
 
                 #Lasso
                 RegLasso = linear_model.Lasso(lmd, max_iter=1e5)
-                RegLasso.fit(Xtrain, ztrain)
-                zPredict_lasso_cvd = RegLasso.predict(Xtest)
+                RegLasso.fit(xtrain, ztrain)
+                zPredict_lasso_cvd = RegLasso.predict(xtest)
 
                 error_ols = np.mean((ztest - zPredict_ols_cvd)**2)
                 error_ridge = np.mean((ztest - zPredict_ridge_cvd)**2)
                 error_lasso = np.mean((ztest - zPredict_lasso_cvd)**2)
-
 
                 print("split: ", split+1, "Error OLS : ", error_ols, "    Error ridge: ", error_ridge, "     Error lasso: ", error_lasso)
                 error_ols_cvd_split[split] = error_ols
@@ -146,8 +156,8 @@ if (complexity == True):
             zPredict_lasso_bootstrap = np.empty((z_test.shape[0], nBootstrap))
             for boot in range(nBootstrap):
                 X_, z_ = resample(X_train, z_train) #Scikit-learn's bootstrap method
-
                 #OLS
+
                 beta_ols_bootstrap = np.linalg.pinv(X_.T @ X_) @ X_.T @ z_
                 zPredict_ols_bootstrap[:,boot] = X_test @ beta_ols_bootstrap #OLS prediction of the same test data for every bootstrap
 
@@ -186,3 +196,15 @@ if (complexity == True):
 
             print("Bootstrap Lasso")
             print("{}   {}   {}     {}".format(degrees[i], error_lasso_bootstrap[i], bias_lasso_bootstrap[i], var_lasso_bootstrap[i]))
+
+#Plot CVD results
+if (cvd == True):
+    plt.figure()
+    plt.title("Lambda = {}".format(lmd))
+    plt.xlabel("Polynomial degree")
+    plt.ylabel("Mean squared error")
+    plt.plot(degrees, error_ols_cvd, label="OLS")
+    plt.plot(degrees, error_ridge_cvd, label="Ridge")
+    plt.plot(degrees, error_lasso_cvd, label="Lasso")
+    plt.legend()
+    plt.show()
