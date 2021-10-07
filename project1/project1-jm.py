@@ -9,8 +9,6 @@ from sklearn.preprocessing import StandardScaler
 import sys
 from sklearn.utils import resample
 from sklearn.model_selection import KFold
-from sklearn import linear_model
-
 
 def R2(y_data, y_model):
     return 1 - np.sum((y_data - y_model) ** 2) / np.sum((y_data - np.mean(y_data)) ** 2)
