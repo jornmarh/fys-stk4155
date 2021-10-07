@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler
 import sys
 from sklearn.utils import resample
 from sklearn.model_selection import KFold
+from sklearn import linear_model
 
 
 def R2(y_data, y_model):
@@ -79,30 +80,36 @@ xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
 z = FrankeFunction(xflat, yflat) + 0.5*np.random.randn(N*N)
 
-#Polynomial analysis
-complexity = False #Change to True to perform simple analysis of polynomial degree
-e = np.zeros(maxdegree)
-b = np.zeros(maxdegree)
-v = np.zeros(maxdegree)
-
 #Bootstrap
 bootstrap = True #Change to True to perform bootstrap analysis for various polynomial degrees
 nBootstrap = 1000 #Number of bootstraps
+
 error_ols_bootstrap = np.zeros(maxdegree)
 bias_ols_bootstrap = np.zeros(maxdegree)
 var_ols_bootstrap = np.zeros(maxdegree)
+
 error_ridge_bootstrap = np.zeros(maxdegree)
 bias_ridge_bootstrap = np.zeros(maxdegree)
 var_ridge_bootstrap = np.zeros(maxdegree)
+
+error_lasso_bootstrap = np.zeros(maxdegree)
+bias_lasso_bootstrap = np.zeros(maxdegree)
+var_lasso_bootstrap = np.zeros(maxdegree)
 
 
 #Cross-validation
 cvd = True #Change to True to perform cross validation analysis for various polynomial degrees.
 k = 10
+
 error_ols_cvd = np.zeros(maxdegree)
 error_ridge_cvd = np.zeros(maxdegree)
+error_lasso_cvd = np.zeros(maxdegree)
+
+#Hyperparameter
+lmd = 0.01
 
 #Complexity analysis
+print("     Lambda = ", lmd, "\n")
 degrees = np.zeros(maxdegree)
 for i in range(maxdegree):
     #Crate design matrix for every degree until maxdegree
@@ -116,6 +123,7 @@ for i in range(maxdegree):
         split=0 #Variable to keep track of the specific split
         error_ols_cvd_split = np.zeros(k) #Array of errors for every split
         error_ridge_cvd_split = np.zeros(k)
+        error_lasso_cvd_split = np.zeros(k)
         print("CVD")
         for train_inds, test_inds in kfold.split(X):
             #Split and scale data
@@ -128,25 +136,34 @@ for i in range(maxdegree):
             zPredict_ols_cvd = Xtest @ beta_ols_cvd
 
             #ridge
-            _l = 1
             _I = np.eye(Xtrain.shape[1], Xtrain.shape[1])
-            beta_ridge_cvd = np.linalg.pinv(Xtrain.T @ Xtrain + _l*_I) @Xtrain.T @ ztrain
+            beta_ridge_cvd = np.linalg.pinv(Xtrain.T @ Xtrain + lmd*_I) @Xtrain.T @ ztrain
             zPredict_ridge_cvd = Xtest @ beta_ridge_cvd
+
+            #Lasso
+            RegLasso = linear_model.Lasso(lmd, max_iter=1e5)
+            RegLasso.fit(Xtrain, ztrain)
+            zPredict_lasso_cvd = RegLasso.predict(Xtest)
 
             error_ols = np.mean((ztest - zPredict_ols_cvd)**2)
             error_ridge = np.mean((ztest - zPredict_ridge_cvd)**2)
-            print("split: ", split+1, "Error OLS : ", error_ols, "           Error ridge: ", error_ridge)
+            error_lasso = np.mean((ztest - zPredict_lasso_cvd)**2)
+
+
+            print("split: ", split+1, "Error OLS : ", error_ols, "    Error ridge: ", error_ridge, "     Error lasso: ", error_lasso)
             error_ols_cvd_split[split] = error_ols
             error_ridge_cvd_split[split] = error_ridge
+            error_lasso_cvd_split[split] = error_lasso
             split+=1
-
-            #Ridge
 
         #Average error of all splits per degree
         error_ols_cvd[i] = np.mean(error_ols_cvd_split)
         error_ridge_cvd[i] = np.mean(error_ridge_cvd_split)
+        error_lasso_cvd[i] = np.mean(error_lasso_cvd_split)
+
         print("Average CVD OLS error: ", error_ols_cvd[i])
         print("Average CVD Ridge error: ", error_ridge_cvd[i])
+        print("Average CVD Lasso error: ", error_lasso_cvd[i])
 
     #Bootstrap
     if (bootstrap == True):
@@ -154,6 +171,7 @@ for i in range(maxdegree):
         X_train, X_test, z_train, z_test = scale(X_train, X_test, z_train, z_test)
         zPredict_ols_bootstrap = np.empty((z_test.shape[0], nBootstrap)) #Array of predicted z for each bootstrap
         zPredict_ridge_bootstrap = np.empty((z_test.shape[0], nBootstrap)) #Array of predicted z for each bootstrap
+        zPredict_lasso_bootstrap = np.empty((z_test.shape[0], nBootstrap))
         for boot in range(nBootstrap):
             X_, z_ = resample(X_train, z_train) #Scikit-learn's bootstrap method
 
@@ -162,12 +180,17 @@ for i in range(maxdegree):
             zPredict_ols_bootstrap[:,boot] = X_test @ beta_ols_bootstrap #OLS prediction of the same test data for every bootstrap
 
             #Ridge
-            _l = 1
-            _I = np.eye(Xtrain.shape[1], Xtrain.shape[1])
-            beta_ridge_bootstrap = np.linalg.pinv(X_.T @ X_ + _l*_I) @ X_.T @ z_
+            _I = np.eye(X_train.shape[1], X_train.shape[1])
+            beta_ridge_bootstrap = np.linalg.pinv(X_.T @ X_ + lmd*_I) @ X_.T @ z_
             zPredict_ridge_bootstrap[:,boot] = X_test @ beta_ridge_bootstrap
 
+            #Lasso
+            RegLasso = linear_model.Lasso(lmd, max_iter=1e5)
+            RegLasso.fit(X_train, z_train)
+            zPredict_lasso_bootstrap[:,boot] = RegLasso.predict(X_test)
+
         #Bootstrap results
+
         #OLS
         error_ols_bootstrap[i] = np.mean( np.mean((z_test.reshape(-1,1) - zPredict_ols_bootstrap)**2, axis=1, keepdims=True) )
         bias_ols_bootstrap[i] = np.mean( (z_test.reshape(-1,1) - np.mean(zPredict_ols_bootstrap, axis=1, keepdims=True))**2 )
@@ -176,48 +199,22 @@ for i in range(maxdegree):
         error_ridge_bootstrap[i] = np.mean( np.mean((z_test.reshape(-1,1) - zPredict_ridge_bootstrap)**2, axis=1, keepdims=True) )
         bias_ridge_bootstrap[i] = np.mean( (z_test.reshape(-1,1) - np.mean(zPredict_ridge_bootstrap, axis=1, keepdims=True))**2 )
         var_ridge_bootstrap[i] = np.mean( np.var(zPredict_ridge_bootstrap, axis=1, keepdims=True) )
+        #Lasso
+        error_lasso_bootstrap[i] = np.mean( np.mean((z_test.reshape(-1,1) - zPredict_lasso_bootstrap)**2, axis=1, keepdims=True) )
+        bias_lasso_bootstrap[i] = np.mean( (z_test.reshape(-1,1) - np.mean(zPredict_lasso_bootstrap, axis=1, keepdims=True))**2 )
+        var_lasso_bootstrap[i] = np.mean( np.var(zPredict_lasso_bootstrap, axis=1, keepdims=True) )
 
         print("Bootstrap OLS")
-        print("degree    error     Bias    Var")
+        print("degree", "       error","                Bias","                  Var")
         print("{}   {}   {}     {}".format(degrees[i], error_ols_bootstrap[i], bias_ols_bootstrap[i], var_ols_bootstrap[i]))
 
         print("Bootstrap ridge")
-        print("degree    error     Bias    Var")
         print("{}   {}   {}     {}".format(degrees[i], error_ridge_bootstrap[i], bias_ridge_bootstrap[i], var_ridge_bootstrap[i]))
 
-    if(complexity == True): #Feil (Fiks senere)
-        beta_O = np.linalg.pinv(X_train_scikit.T @ X_train_scikit) @ X_train_scikit.T @ z_train_scikit
-        z_tildE = X_train_scikit @ beta_O
-        z_predicT = X_test_scikit @ beta_O
-        err_test = np.mean((z_test_scikit - z_predicT)**2)
-        bias_test = np.mean((z_test_scikit - np.mean(z_predicT))**2)
-        var_test = np.mean(np.var(z_predicT))
-        print(err_test, bias_test, var_test)
-        e[i] = err_test
-        b[i] = bias_test
-        v[i] = var_test
+
+        print("Bootstrap Lasso")
+        print("{}   {}   {}     {}".format(degrees[i], error_lasso_bootstrap[i], bias_lasso_bootstrap[i], var_lasso_bootstrap[i]))
 
 #Plot results from bootstrap
-if (bootstrap == True):
-    plt.plot(degrees, error_ols_bootstrap, label="error")
-    plt.plot(degrees, bias_ols_bootstrap, label="bias")
-    plt.plot(degrees, var_ols_bootstrap, label="var")
-    plt.plot(degrees, error_ridge_bootstrap, label="error ridge")
-    plt.plot(degrees, bias_ridge_bootstrap, label="bias ridge ")
-    plt.plot(degrees, var_ridge_bootstrap, label="var ridge")
-    plt.legend()
-    plt.show()
 
 #Plot cvd
-if (cvd == True):
-    plt.plot(degrees, error_ols_cvd, label="OLS")
-    plt.plot(degrees, error_ridge_cvd, label="ridge")
-    plt.legend()
-    plt.show()
-#Plot results from complexity
-if (complexity == True):
-    plt.plot(degrees, e, label='error')
-    plt.plot(degrees, b, label='Bias')
-    plt.plot(degrees, v, label='Var')
-    plt.legend()
-    plt.show()
