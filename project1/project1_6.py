@@ -51,16 +51,53 @@ plt.ylabel('Y')
 plt.show()
 '''
 
-N = 20
-maxdegree = 10
-z = terrain1[:N,:N].ravel()
+#seed(64)
+N = 100
+maxdegree = 20
+z = terrain1[:N,:N].ravel() + 0.5*np.random.randn(N*N)
 x = np.linspace(0,1, N)
 y = np.linspace(0,1, N)
 x_mesh, y_mesh = np.meshgrid(x,y)
 xflat = x_mesh.ravel()
 yflat = y_mesh.ravel()
+plt.plot(xflat, yflat)
+plt.show()
 
+print("z:", z, "\n")
 X = create_X(xflat, yflat, 5)
+print("Degree = 5, X shape :", X.shape,"\n")
+X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
+print("Unscaled")
+beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
+zTilde = X_train @ beta
+zPredict = X_test @ beta
+print("z_train: ", z_train)
+print("zTilde ", zTilde, "\n")
+print("z_test: ", z_test)
+print("zPredict", zPredict)
+print("\n")
+print("z_train - zPredict", z_train - zTilde)
+print("\n")
+print("z_test - zPredict", z_test-zPredict)
+print("mse train: ", mean_squared_error(z_train, zTilde))
+print("\n")
+print("mse test", mean_squared_error(z_test, zPredict))
+print("\n", "Scaled with standardScaler:")
+X_train, X_test, z_train, z_test = scale(X_train, X_test, z_train, z_test)
+beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
+zTilde = X_train @ beta
+zPredict = X_test @ beta
+print("z_train: ", z_train)
+print("zTilde ", zTilde, "\n")
+print("z_test: ", z_test)
+print("zPredict", zPredict)
+print("\n")
+print("z_train - zPredict", z_train - zTilde)
+print("\n")
+print("z_test - zPredict", z_test-zPredict)
+print("mse train: ", mean_squared_error(z_train, zTilde))
+print("\n")
+print("mse test", mean_squared_error(z_test, zPredict))
 
 #Bootstrap
 bootstrap = False #Change to True to perform bootstrap analysis for various polynomial degrees
@@ -79,7 +116,7 @@ if (bootstrap == True):
     var_lasso_bootstrap = np.zeros(maxdegree)
 
 #Cross-validation
-cvd = True #Change to True to perform cross validation analysis for various polynomial degrees.
+cvd = False #Change to True to perform cross validation analysis for various polynomial degrees.
 if (cvd == True):
     k = 10
     error_ols_cvd = np.zeros(maxdegree)
@@ -132,7 +169,7 @@ if (complexity == True):
                 error_ridge = np.mean((ztest - zPredict_ridge_cvd)**2)
                 error_lasso = np.mean((ztest - zPredict_lasso_cvd)**2)
 
-                print("split: ", split+1, "Error OLS : ", error_ols, "    Error ridge: ", error_ridge, "     Error lasso: ", error_lasso)
+                #print("split: ", split+1, "Error OLS : ", error_ols, "    Error ridge: ", error_ridge, "     Error lasso: ", error_lasso)
                 error_ols_cvd_split[split] = error_ols
                 error_ridge_cvd_split[split] = error_ridge
                 error_lasso_cvd_split[split] = error_lasso
@@ -156,8 +193,8 @@ if (complexity == True):
             zPredict_lasso_bootstrap = np.empty((z_test.shape[0], nBootstrap))
             for boot in range(nBootstrap):
                 X_, z_ = resample(X_train, z_train) #Scikit-learn's bootstrap method
-                #OLS
 
+				#OLS
                 beta_ols_bootstrap = np.linalg.pinv(X_.T @ X_) @ X_.T @ z_
                 zPredict_ols_bootstrap[:,boot] = X_test @ beta_ols_bootstrap #OLS prediction of the same test data for every bootstrap
 
