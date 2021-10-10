@@ -42,66 +42,37 @@ def scale(X_train, X_test, z_train, z_test):
 
 #Initilize data
 terrain1 = imread("SRTM_data_Norway_1.tif")
-'''
+
 plt.figure()
 plt.title('Terrain over Norway')
 plt.imshow(terrain1, cmap='gray')
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.show()
-'''
 
 #seed(64)
-N = 100
-maxdegree = 20
-z = terrain1[:N,:N].ravel() + 0.5*np.random.randn(N*N)
+N = 20
+maxdegree = 10
+z = terrain1[:N,:N].ravel() + 0.0*np.random.randn(N*N)
 x = np.linspace(0,1, N)
 y = np.linspace(0,1, N)
 x_mesh, y_mesh = np.meshgrid(x,y)
 xflat = x_mesh.ravel()
 yflat = y_mesh.ravel()
-plt.plot(xflat, yflat)
+
+plt.scatter(xflat, yflat)
 plt.show()
 
-print("z:", z, "\n")
-X = create_X(xflat, yflat, 5)
-print("Degree = 5, X shape :", X.shape,"\n")
-X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
-print("Unscaled")
-beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
-zTilde = X_train @ beta
-zPredict = X_test @ beta
-print("z_train: ", z_train)
-print("zTilde ", zTilde, "\n")
-print("z_test: ", z_test)
-print("zPredict", zPredict)
-print("\n")
-print("z_train - zPredict", z_train - zTilde)
-print("\n")
-print("z_test - zPredict", z_test-zPredict)
-print("mse train: ", mean_squared_error(z_train, zTilde))
-print("\n")
-print("mse test", mean_squared_error(z_test, zPredict))
-print("\n", "Scaled with standardScaler:")
-X_train, X_test, z_train, z_test = scale(X_train, X_test, z_train, z_test)
-beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
-zTilde = X_train @ beta
-zPredict = X_test @ beta
-print("z_train: ", z_train)
-print("zTilde ", zTilde, "\n")
-print("z_test: ", z_test)
-print("zPredict", zPredict)
-print("\n")
-print("z_train - zPredict", z_train - zTilde)
-print("\n")
-print("z_test - zPredict", z_test-zPredict)
-print("mse train: ", mean_squared_error(z_train, zTilde))
-print("\n")
-print("mse test", mean_squared_error(z_test, zPredict))
+#complexity
+poly = True
+if (poly == True):
+	error_ols = np.zeros(maxdegree)
+	error_ridge = np.zeros(maxdegree)
+	error_lasso = np.zeros(maxdegree)
 
 #Bootstrap
 bootstrap = False #Change to True to perform bootstrap analysis for various polynomial degrees
-nBootstrap = 1000 #Number of bootstraps
+nBootstrap = 100 #Number of bootstraps
 if (bootstrap == True):
     error_ols_bootstrap = np.zeros(maxdegree)
     bias_ols_bootstrap = np.zeros(maxdegree)
@@ -124,7 +95,7 @@ if (cvd == True):
     error_lasso_cvd = np.zeros(maxdegree)
 
 #Hyperparameter
-lmd = 0.01
+lmd = 0.0001
 
 complexity = True
 #Complexity analysis
@@ -237,7 +208,7 @@ if (complexity == True):
 #Plot CVD results
 if (cvd == True):
     plt.figure()
-    plt.title("Lambda = {}".format(lmd))
+    plt.title("MSE after 10-fold cross-validation, lambda = {}".format(lmd))
     plt.xlabel("Polynomial degree")
     plt.ylabel("Mean squared error")
     plt.plot(degrees, error_ols_cvd, label="OLS")
@@ -245,3 +216,15 @@ if (cvd == True):
     plt.plot(degrees, error_lasso_cvd, label="Lasso")
     plt.legend()
     plt.show()
+
+if (bootstrap == True):
+	plt.figure()
+	plt.plot(degrees, error_ols_bootstrap, label = "ols")
+	plt.plot(degrees, error_ridge_bootstrap, label = "ridge")
+	plt.plot(degrees, error_lasso_bootstrap, label = "lasso")
+	plt.ylim(0,0.2)
+	plt.legend()
+	plt.xlabel("Polynomial degree")
+	plt.ylabel("MSE")
+	plt.title("MSE after 100 bootstraps, lambda = {}".format(lmd))
+	plt.show()
