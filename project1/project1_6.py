@@ -66,6 +66,28 @@ scaler = StandardScaler()
 zScale = scaler.fit(z.reshape(-1,1))
 z = zScale.transform(z.reshape(-1,1)).ravel()
 
+
+X = create_X(xflat, yflat, 6)
+X_train, X_test, z_train, z_test = train_test_split(X,z, test_size = 0.2)
+X_train, X_test, z_train, z_test = scale(X_train, X_test, z_train, z_test)
+
+beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
+zTilde = X_train @ beta
+_str = len(beta)
+variance = np.zeros(_str)
+CI = np.zeros(_str)
+
+for i in range(_str):
+    variance[i] = np.sqrt(mean_squared_error(z_train, zTilde))**2 * np.linalg.pinv(X_train.T @ X_train)[i,i]
+    CI[i] = 2*np.sqrt(variance[i])/np.sqrt(N)
+print("")
+plt.errorbar(np.arange(0,_str), beta, yerr=CI, fmt='o', ecolor='red', capsize=5, markersize=4, label='beta_i with confidence range')
+plt.xlabel('i')
+plt.ylabel('beta [i]')
+plt.legend()
+plt.title("Confidence interval of the paramateres beta for a 6th order polynomial fit")
+plt.show()
+
 # complexity
 poly = False
 if (poly == True):
@@ -78,7 +100,7 @@ if (poly == True):
 
 # Bootstrap
 # Change to True to perform bootstrap analysis
-bootstrap = True
+bootstrap = False
 nBootstrap = 1000  # Number of bootstraps
 if (bootstrap == True):
     error_ols_bootstrap = np.zeros(maxdegree)
@@ -95,7 +117,7 @@ if (bootstrap == True):
 
 # Cross-validation
 # Change to True to perform cross validation
-cvd = True
+cvd = False
 if (cvd == True):
     k = 5
     kfold = KFold(n_splits=k, shuffle=True)
