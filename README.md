@@ -1,4 +1,4 @@
-Fys-stk4155 github repository
+Fys-stk4155 github repository in collaboration with Andreas Dyve
 
 Folders:
   - Weekly-excercies
