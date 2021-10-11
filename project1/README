@@ -1,6 +1,7 @@
 Repository for project 1 
 
 The main report including code and figures/data is found as a jupyter notebook called project1.ipynb. 
-In additon, the code related to exercise 6 is called project1_6.py. The figures derived from this script can be located under figures/exercise6/.
+For exercise 6, the code used is found in the script project1_6.py. The figures derived from this script can be located under figures/exercise6/
+in addition to the jupyter-book. 
 
 
