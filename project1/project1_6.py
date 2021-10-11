@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-from random import random, seed
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn import linear_model
@@ -9,8 +7,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
 from sklearn.model_selection import KFold
 from imageio import imread
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
+
+
+'''
+In this script, cross-validaton, bootstrap, and ordinary complexity analysis
+is done by setting the value of bootstap, cvd, poly = True
+'''
 
 
 def create_X(x, y, n):
@@ -46,18 +48,10 @@ def scale(X_train, X_test, z_train, z_test):
 # Initilize data
 terrain1 = imread("SRTM_data_Norway_1.tif")
 
-#plt.figure()
-#plt.title('Terrain over Norway')
-#plt.imshow(terrain1, cmap='gray')
-#plt.xlabel('X')
-#plt.ylabel('Y')
-#plt.show()
-
-# seed(64)
 N = 25
 maxdegree = 10
 
-z = terrain1[::N, ::N]
+z = terrain1[::N, ::N] #Pick every Nth(25) point in terrain1
 
 x = np.linspace(0, 1, len(z[0]))
 y = np.linspace(0, 1, len(z[:,0]))
@@ -83,9 +77,9 @@ if (poly == True):
     mse_lasso = np.zeros(maxdegree)
 
 # Bootstrap
-# Change to True to perform bootstrap analysis for various polynomial degrees
+# Change to True to perform bootstrap analysis
 bootstrap = True
-nBootstrap = 100  # Number of bootstraps
+nBootstrap = 1000  # Number of bootstraps
 if (bootstrap == True):
     error_ols_bootstrap = np.zeros(maxdegree)
     bias_ols_bootstrap = np.zeros(maxdegree)
@@ -100,7 +94,7 @@ if (bootstrap == True):
     var_lasso_bootstrap = np.zeros(maxdegree)
 
 # Cross-validation
-# Change to True to perform cross validation analysis for various polynomial degrees.
+# Change to True to perform cross validation
 cvd = True
 if (cvd == True):
     k = 5
@@ -114,11 +108,13 @@ lmd = 1e-3
 
 complexity = True
 # Complexity analysis
+
 if (complexity == True):
     print("     Lambda = ", lmd, "\n")
+
     degrees = np.zeros(maxdegree)
     for i in range(maxdegree):
-        # Crate design matrix for every degree until maxdegree
+        # Create design matrix for every degree until maxdegree
         degrees[i] = i
         X = create_X(xflat, yflat, i)
 
@@ -156,7 +152,7 @@ if (complexity == True):
 
         if(cvd == True):
             split = 0  # Variable to keep track of the specific split
-            # Array of errors for every split
+
             error_ols_cvd_split = np.zeros(k)
             error_ridge_cvd_split = np.zeros(k)
             error_lasso_cvd_split = np.zeros(k)
@@ -267,7 +263,7 @@ if (cvd == True):
     plt.plot(degrees, error_ols_cvd, label="OLS")
     plt.plot(degrees, error_ridge_cvd, label="Ridge")
     plt.plot(degrees, error_lasso_cvd, label= "Lasso")
-    plt.title("Cross-validation of OLS, Ridge and Lasso regression. Lambda = {}".format(lmd))
+    plt.title("Cross-validation")
     plt.xlabel("Polynomial degree")
     plt.ylabel("MSE")
     plt.legend()
@@ -281,7 +277,7 @@ if (bootstrap == True):
     plt.legend()
     plt.xlabel("Polynomial degree")
     plt.ylabel("error")
-    plt.title("MSE evaluation of OLS, Ridge and Lasso regression. Lambda = {}".format(lmd))
+    plt.title("Bootstrap")
     plt.show()
 
 if (poly == True):
