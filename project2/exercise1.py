@@ -60,25 +60,31 @@ def scale(X_train, X_test, z_train, z_test):
 def learning_schedule(t):
     return t_0/(t + t_1)
 
+
 #Initilize data
 np.random.seed(0)
 N = 20 #Total datapoints
-
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
 x_mesh, y_mesh = np.meshgrid(x,y)
 x_flat = np.ravel(x_mesh)
 y_flat = np.ravel(y_mesh)
-z = FrankeFunction(x_flat, y_flat, 0) #Change the third argument to vary the amount of stoicrastic noise
-
-
-X = create_X(x_flat, y_flat, 5)
+z = FrankeFunction(x_flat, y_flat, 0)
+X = create_X(x_flat, y_flat, 5) #fifth order polynomial
 X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
 X_train, X_test, z_train, z_test = scale(X_train, X_test, z_train, z_test)
 
+#OLS analytical solution
 beta_ols = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
-print("Beta: OLS")
+print("Analytical Beta: OLS")
 print(beta_ols.reshape(-1,1))
+
+#Ridge analytical solution
+lmbda = 0.01
+Id = lmbda* np.eye(X_train.shape[1], X_train.shape[1])
+beta_ridge = np.linalg.inv(X_train.T@X_train+Id) @ X_train.T @ z_train
+print("Analytical Beta: ridge")
+print(beta_ridge.reshape(-1,1))
 
 #paramateres
 M = 10 #Number of points per mini-batch
@@ -88,26 +94,68 @@ n_epochs = 100 # Number of total epochs
 #paramateres for tuning the learning rate
 t_0 = 5
 t_1 = 100
-eta = t_0/t_1
-#Initial guess for the paramater beta(theta)
-theta = np.random.randn(len(X_train[0,:]))
+eta = 0.01
 
-#SDG algorithm
-algo = "Basic"
+#Initial beta(theta)
+theta_ols = np.random.randn(len(X_train[0,:]))
+theta_ridge = np.random.randn(len(X_train[0,:]))
 
+#While loop for criteria not met?
+#Looping through epochs, mini-batches
 for epoch in range(1, n_epochs+1):
     for k in range(m):
         random_index = np.random.randint(m)
         xi = X_train[random_index:random_index+1]
         zi = z_train[random_index:random_index+1]
-        if (algo == "Basic"):
-            eta = learning_schedule(epoch*m+k)
-        grad = 2.0*xi.T@((xi@theta)-zi)
-        theta = theta - eta*grad
-print("SGD")
-print(np.abs(theta - beta_ols))
+        eta = learning_schedule(epoch*m+k)
+        g_ols = 2.0 * xi.T @ (xi @ theta_ols - zi)
+        theta_ols = theta_ols - eta*g_ols
+        lmd = 0.01
+        g_ridge = 2.0 * xi.T @ (xi @ theta_ridge - zi) + 2.0 * lmd * theta_ridge
+        theta_ridge = theta_ridge - eta * g_ridge
 
+print("\n", "SGD basic", "\n")
+print("OLS")
+print(np.abs(theta_ols - beta_ols))
+
+print("Ridge")
+print(np.abs(theta_ridge - beta_ridge))
+
+#Momentum SDG
+eta = 0.01
+alpha = 0.001
+
+theta_ols = np.random.randn(len(X_train[0,:]))
+theta_ridge = np.random.randn(len(X_train[0,:]))
+vel_ols = np.random.randn(len(X_train[0,:]))
+vel_ridge = np.random.randn(len(X_train[0,:]))
+
+#While loop for criteria not met?
+for epoch in range(1, n_epochs+1):
+    for k in range(m):
+        random_index = np.random.randint(m)
+        xi = X_train[random_index:random_index+1]
+        zi = z_train[random_index:random_index+1]
+        g_ols = 2.0 * xi.T @ (xi @ theta_ols - zi)
+        vel_ols = alpha*vel_ols - eta*g_ols
+        theta_ols = theta_ols + vel_ols
+
+        lmd = 0.01
+        g_ridge = 2.0 * xi.T @ (xi @ theta_ridge - zi) + (2.0 * lmd * theta_ridge)
+        vel_ridge = (alpha*vel_ridge) - (eta*g_ridge)
+        theta_ridge = theta_ridge + vel_ridge
+
+print("\n", "SGD Momentum", "\n")
+print("OLS")
+print(np.abs(theta_ols - beta_ols))
+
+print("Ridge")
+print(np.abs(theta_ridge - beta_ridge))
+
+"""
+#Scikit-learn SGD
 sgdreg = SGDRegressor(max_iter = 100, penalty=None, eta0=t_0/t_1)
 sgdreg.fit(X_train,z_train)
 print("sgdreg from scikit")
 print(np.abs(sgdreg.coef_ - beta_ols))
+"""
