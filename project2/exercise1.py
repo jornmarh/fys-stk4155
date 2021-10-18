@@ -11,6 +11,7 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
 from sklearn.utils import resample
+from sklearn.linear_model import SGDRegressor
 
 #Define functions
 def R2(y_data, y_model):
@@ -56,52 +57,57 @@ def scale(X_train, X_test, z_train, z_test):
 
     return X_train_scaled, X_test_scaled, z_train_scaled, z_test_scaled
 
+def learning_schedule(t):
+    return t_0/(t + t_1)
+
 #Initilize data
 np.random.seed(0)
-
-maxdegrees = 8 #Max degree of polynomial fit
 N = 20 #Total datapoints
-ts = 0.2 #Size of train test split
-scaling = True #Change to try without scaling
 
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
 x_mesh, y_mesh = np.meshgrid(x,y)
 x_flat = np.ravel(x_mesh)
 y_flat = np.ravel(y_mesh)
+z = FrankeFunction(x_flat, y_flat, 0) #Change the third argument to vary the amount of stoicrastic noise
 
-z = FrankeFunction(x_flat, y_flat, 0.15) #Change the third argument to vary the amount of stoicrastic noise
 
-polydegree = np.zeros(maxdegrees)
+X = create_X(x_flat, y_flat, 5)
+X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
+X_train, X_test, z_train, z_test = scale(X_train, X_test, z_train, z_test)
 
-mse_ols_train = np.zeros(maxdegrees)
-mse_ols_test = np.zeros(maxdegrees)
+beta_ols = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
+print("Beta: OLS")
+print(beta_ols.reshape(-1,1))
 
-# OLS regression for polynomials from 0 to maxdegrees
-for i in range(maxdegrees):
-    degree = i
-    polydegree[i] = degree
-    X = create_X(x_flat, y_flat, degree)
-    X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=ts)
+#paramateres
+M = 10 #Number of points per mini-batch
+m = int(len(X_train)/M) #Amount of mini-batches
+n_epochs = 100 # Number of total epochs
 
-    if (scaling == True):
-        X_train, X_test, z_train, z_test = scale(X_train, X_test, z_train, z_test) #Scale data with standard scaler
+#paramateres for tuning the learning rate
+t_0 = 5
+t_1 = 100
+eta = t_0/t_1
+#Initial guess for the paramater beta(theta)
+theta = np.random.randn(len(X_train[0,:]))
 
-    # prediction ols
-    beta_ols = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
-    zTilde_ols = X_train @ beta_ols
-    zPredict_ols = X_test @ beta_ols
+#SDG algorithm
+algo = "Basic"
 
-    # cost functions ols
-    mse_ols_train[i] = MSE(z_train, zTilde_ols)
-    mse_ols_test[i] = MSE(z_test, zPredict_ols)
+for epoch in range(1, n_epochs+1):
+    for k in range(m):
+        random_index = np.random.randint(m)
+        xi = X_train[random_index:random_index+1]
+        zi = z_train[random_index:random_index+1]
+        if (algo == "Basic"):
+            eta = learning_schedule(epoch*m+k)
+        grad = 2.0*xi.T@((xi@theta)-zi)
+        theta = theta - eta*grad
+print("SGD")
+print(np.abs(theta - beta_ols))
 
-print("Minimum MSE: ", np.amin(mse_ols_test))
-
-plt.plot(polydegree, mse_ols_train, label='mse train')
-plt.plot(polydegree, mse_ols_test, label='mse test')
-plt.title("MSE")
-plt.xlabel("Polynomial degree")
-plt.ylabel("Error")
-plt.legend()
-plt.show()
+sgdreg = SGDRegressor(max_iter = 100, penalty=None, eta0=t_0/t_1)
+sgdreg.fit(X_train,z_train)
+print("sgdreg from scikit")
+print(np.abs(sgdreg.coef_ - beta_ols))
