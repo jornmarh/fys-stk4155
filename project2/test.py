@@ -1,69 +1,67 @@
-# Importing various packages
-from math import exp, sqrt
-from random import random, seed
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.linear_model import SGDRegressor
+import autograd.numpy as np
+from autograd import elementwise_grad
+from module1 import Franke
 from sklearn.metrics import mean_squared_error
 
-n = 1000
-x = 2*np.random.rand(n,1)
-y = 4+3*x+np.random.randn(n,1)
+def MSE(beta):
+    return ((X_train@beta - z_train)**2)/np.size(z_train)
 
-X = np.c_[np.ones((n,1)), x]
-theta_linreg = np.linalg.inv(X.T @ X) @ (X.T @ y)
-#print("Own inversion")
-#print(theta_linreg)
-sgdreg = SGDRegressor(max_iter = 50, penalty=None, eta0=0.1)
-sgdreg.fit(x,y.ravel())
-#print("sgdreg from scikit")
-#print(sgdreg.intercept_, sgdreg.coef_)
+#From https://www.geeksforgeeks.org/ml-mini-batch-gradient-descent-with-python/
+def create_miniBatches(X,y, M):
+    mini_batches = []
+    data = np.hstack((X, y.reshape(-1,1)))
+    np.random.shuffle(data)
+    m = data.shape[0] // M
+    i = 0
 
-
-theta = np.random.randn(2,1)
-eta = 0.1
-Niterations = 1000
-
-
-for iter in range(Niterations):
-    gradients = 2.0/n*X.T @ ((X @ theta)-y)
-    theta -= eta*gradients
-#print("theta from own gd")
-#print(theta)
-
-xnew = np.array([[0],[2]])
-Xnew = np.c_[np.ones((2,1)), xnew]
-ypredict = Xnew.dot(theta)
-ypredict2 = Xnew.dot(theta_linreg)
+    for i in range(m + 1):
+        mini_batch = data[i * M:(i + 1)*M, :]
+        X_mini = mini_batch[:, :-1]
+        Y_mini = mini_batch[:, -1]
+        mini_batches.append((X_mini, Y_mini))
+    if data.shape[0] % M != 0:
+        mini_batch = data[i * M:data.shape[0]]
+        X_mini = mini_batch[:, :-1]
+        Y_mini = mini_batch[:, -1]
+        mini_batches.append((X_mini, Y_mini))
+    return mini_batches
 
 
-n_epochs = 50
-M = 5   #size of each minibatch
-m = int(n/M) #number of minibatches
-t0, t1 = 5, 50
-eta = 0.01
-def learning_schedule(t):
-    return t0/(t+t1)
+np.random.seed(64)
+N = 100
+polydegree = 5
+noise_coef = 0.15
+x = np.sort(np.random.uniform(0, 1, N)); y = np.sort(np.random.uniform(0, 1, N))
+x_mesh, y_mesh = np.meshgrid(x,y); x_flat = np.ravel(x_mesh); y_flat = np.ravel(y_mesh)
 
-theta = np.random.randn(2,1)
+input = Franke(x_flat, y_flat, polydegree, noise_coef)
+X_train, X_test, z_train, z_test = input.format()
+
+beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
+ytilde = X_train @ beta
+print(mean_squared_error(z_train, ytilde))
+
+max_iter = 10000
+eta = 0.05
+iter = 0
+beta_gd = np.random.randn(X_train.shape[1])
+while iter < max_iter:
+    gradient = (2.0/len(X_train))*X_train.T @ (X_train @ beta_gd - z_train)
+    beta_gd = beta_gd - eta*gradient
+    iter += 1
+ytilde_gd = X_train @ beta_gd
+print(mean_squared_error(z_train, ytilde_gd))
+
+n_epochs = 100
+eta = 0.001
+M = 5
+theta = np.random.randn(X_train.shape[1])
 for epoch in range(n_epochs):
-    for i in range(m):
-        random_index = np.random.randint(m)
-        xi = X[random_index:random_index+1]
-        yi = y[random_index:random_index+1]
-        print(xi)
-        print(yi)
-        print("")
-        gradients = 2.0* xi.T @ ((xi @ theta)-yi)
-        theta = theta - eta*gradients
-    print("")
-'''
-plt.plot(xnew, ypredict, "r-")
-plt.plot(xnew, ypredict2, "b-")
-plt.plot(x, y ,'ro')
-plt.axis([0,2.0,0, 15.0])
-plt.xlabel(r'$x$')
-plt.ylabel(r'$y$')
-plt.title(r'Random numbers ')
-plt.show()
-'''
+    mini_batches = create_miniBatches(X_train, z_train, M)
+    for mini_batch in mini_batches:
+        xi, yi = mini_batch
+        gradient = 2.0*xi.T@((xi@theta)-yi)
+        theta = theta - eta*gradient
+ytilde_sdg = X_train @ theta
+mse_sdg = mean_squared_error(z_train, ytilde_sdg)
+print(mse_sdg)

@@ -24,23 +24,20 @@ class Sdg:
             iter += 1
         self.theta_gd = beta
         ytilde_gd = self.X_train @ self.theta_gd
-        print("Gradient descent")
         print(mean_squared_error(self.y_train, ytilde_gd))
-        
-    def stocastichGD_ols(self, algo=None):
-        if (algo == None):
-            theta = np.random.randn(self.X_train.shape[1])
-            for epoch in range(self.n_epochs):
-                for k in range(self.m):
-                    random_index = np.random.randint(self.m)
-                    xi = self.X_train[random_index:random_index+1]
-                    yi = self.y_train[random_index:random_index+1]
-                    gradient = 2.0*xi.T@((xi@theta)-yi)
-                    theta = theta - self.eta*gradient
-            self.ytilde_sdg_ols = self.X_train @ theta
-            mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
-            print("OLS with SGD")
-            print(mse_sdg_ols)
+
+    def stocastichGD_ols(self):
+        theta = np.random.randn(self.X_train.shape[1])
+        for epoch in range(self.n_epochs):
+            for k in range(self.m):
+                random_index = np.random.randint(self.m)
+                xi = self.X_train[random_index:random_index+1]
+                yi = self.y_train[random_index:random_index+1]
+                gradient = 2.0*xi.T@((xi@theta)-yi)
+                theta = theta - self.eta*gradient
+        self.ytilde_sdg_ols = self.X_train @ theta
+        mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
+        print(mse_sdg_ols)
 
     def stocastichGD_ridge(self, lmd):
         theta = np.random.randn(self.X_train.shape[1])
@@ -53,7 +50,6 @@ class Sdg:
                 theta = theta - self.eta*gradient
         self.ytilde_sdg_ridge = self.X_train @ theta
         mse_sdg_ridge = mean_squared_error(self.y_train, self.ytilde_sdg_ridge)
-        print("Ridge with SGD")
         print(mse_sdg_ridge)
 
 class Franke:
