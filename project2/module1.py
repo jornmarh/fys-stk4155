@@ -15,36 +15,20 @@ class Sdg:
         self.n_epochs = n_epochs
         self.m = int(len(self.X_train)/self.M)
 
-    def ols_regression(self):
-        self.beta_ols = np.linalg.pinv(self.X_train.T @ self.X_train) @ self.X_train.T @ self.y_train
-        self.ytilde_ols = self.X_train @ self.beta_ols
-        self.mse_ols = mean_squared_error(self.y_train, self.ytilde_ols)
-        print("OLS")
-        print(self.mse_ols)
-
-    def ridge_regression(self, lmd):
-         I_ = np.eye(self.X_train.shape[1], self.X_train.shape[1])
-         self.beta_ridge = np.linalg.pinv(self.X_train.T @ self.X_train + lmd*I_) @ self.X_train.T @ self.y_train
-         self.ytilde_ridge = self.X_train @ self.beta_ridge
-         self.mse_ridge = mean_squared_error(self.y_train, self.ytilde_ridge)
-         print("ridge")
-         print(self.mse_ridge)
-
-    def grad_descent(max_iter):
+    def grad_descent(self, max_iter):
         iter = 0
         beta = np.random.randn(self.X_train.shape[1])
         while iter < max_iter:
             gradient = (2.0/len(self.X_train))*self.X_train.T @ (self.X_train @ beta - self.y_train)
-            beta = beta - eta*gradient
+            beta = beta - self.eta*gradient
             iter += 1
         self.theta_gd = beta
         ytilde_gd = self.X_train @ self.theta_gd
         print("Gradient descent")
         print(mean_squared_error(self.y_train, ytilde_gd))
-
+        
     def stocastichGD_ols(self, algo=None):
         if (algo == None):
-            print("No learning schedule")
             theta = np.random.randn(self.X_train.shape[1])
             for epoch in range(self.n_epochs):
                 for k in range(self.m):
@@ -57,8 +41,6 @@ class Sdg:
             mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
             print("OLS with SGD")
             print(mse_sdg_ols)
-        elif (algo == "basic"):
-            print("basic")
 
     def stocastichGD_ridge(self, lmd):
         theta = np.random.randn(self.X_train.shape[1])
