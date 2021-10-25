@@ -1,32 +1,38 @@
 import numpy as np
 
-n_hiddenLayers = 1
-n_hiddenNodes = 50
-n_inputs = X.shape[1]
-n_outputs = 1
-n_categories =
-
-hidden_weights
-hidden_bias
-
-output_weigths
-output_bias
-
 def sigmoid(x):
-    return 1/(1+np.exp(x))
+    return 1/(1+np.exp(-x))
 
 
-def feed_forward(a_h = None):
-    iter = 0
-    while iter < n_hiddenLayers:
-        if (a_h == None):
-            z_h =
-        else:
-            z_h = a_h*W + b
-        a_h = sigmoid(z_h)
-        iter += 1
-        feed_forward(a_h)
-    feed_forward_output(a_h):
+def feed_forward(X):
+    z_h = np.matmul(X, hidden_weights) + hidden_bias
+    a_h = sigmoid(z_h)
 
-def feed_forward_output(a_h):
-    return "test"
+    z_o = np.matmul(a_h, output_weights) + output_bias
+    a_o = sigmoid(z_o)
+
+    return a_o
+
+def predict(X):
+    probabilities = feed_forward(X)
+    return np.argmax(probabilities, axis=1)
+
+np.random.seed(0)
+# Design matrix
+X = np.array([ [0, 0], [0, 1], [1, 0],[1, 1]],dtype=np.float64)
+
+n_inputs, n_features = X.shape
+n_categories = 2
+n_hidenNeurons = 2
+
+hidden_weights = np.random.rand(n_features, n_hidenNeurons)
+hidden_bias = np.zeros(n_hidenNeurons) + 0.01
+
+output_weights = np.random.rand(n_hidenNeurons, n_categories)
+output_bias =  np.zeros(n_categories) + 0.01
+
+probs = feed_forward(X)
+print(probs)
+
+predictions = predict(X)
+print(predictions)
