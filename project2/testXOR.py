@@ -5,6 +5,13 @@ from sklearn import datasets
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
 
+def cost(a, t):
+    return -(t * np.log( a ) + (1-t)*np.log( 1 - a ))
+
+def costDeriv_a(a, t):
+    return ( ( a - t )/( a( 1 - t ) ) ) #sigmoid
+
+
 def feed_forward(X):
     layer = 1
     print("hidden layer ", str(layer))
@@ -17,9 +24,9 @@ def feed_forward(X):
         a_h = sigmoid(z_h)
     print("output layer")
     z_o = np.matmul(a_h, output_weights) + output_bias
-    a_o = sigmoid(z_o)
+    probaibility = sigmoid(z_o)
 
-    return a_o
+    return probaibility
 
 def back_propagation():
     return "uferdig"
