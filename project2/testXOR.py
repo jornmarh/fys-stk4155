@@ -8,9 +8,6 @@ def sigmoid(x):
 def cost(a, t):
     return -(t * np.log( a ) + (1-t)*np.log( 1 - a ))
 
-def costDeriv_a(a, t):
-    return ( ( a - t )/( a( 1 - t ) ) ) #sigmoid
-
 
 def feed_forward(X):
     layer = 1
@@ -46,11 +43,8 @@ n_hidden_neurons = 2
 n_categories = 2
 n_hidden_layers = 1
 
-
 hidden_weights = np.random.randn(n_features, n_hidden_neurons)
-#print(hidden_weights)
 hidden_bias = np.zeros(n_hidden_neurons) + 0.01
-#print(hidden_bias)
 output_weights = np.random.randn(n_hidden_neurons, n_categories)
 output_bias = np.zeros(n_categories) + 0.01
 
