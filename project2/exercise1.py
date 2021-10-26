@@ -26,22 +26,21 @@ def ridge_regression(X_train, y_train, lmd):
 np.random.seed(64)
 N = 20
 polydegree = 5
-noise_coef = 0
+noise_coef = 0.15
 x = np.sort(np.random.uniform(0, 1, N)); y = np.sort(np.random.uniform(0, 1, N))
 x_mesh, y_mesh = np.meshgrid(x,y); x_flat = np.ravel(x_mesh); y_flat = np.ravel(y_mesh)
 
 input = Franke(x_flat, y_flat, polydegree, noise_coef)
 X_train, X_test, z_train, z_test = input.format()
 
-eta = 0.015
+eta = 0.005
+alpha = 0.01
 M = 10
 n_epochs = 100
 m = int(len(X_train)/M)
 
-sgdRegressor = Sdg(X_train, X_test, z_train, z_test, eta, M, n_epochs)
-j = 0
-while j < 50:
-    #sgdRegressor.grad_descent(1000)
-    sgdRegressor.stocastichGD_ols()
-    #sgdRegressor.stocastichGD_ridge(1)
-    j+=1
+sgdRegressor = Sdg(X_train, X_test, z_train, z_test, eta, alpha, M, n_epochs)
+
+#sgdRegressor.grad_descent(1000)
+sgdRegressor.stocastichGD_ols('hei', 10)
+sgdRegressor.stocastichGD_ridge(0,10)

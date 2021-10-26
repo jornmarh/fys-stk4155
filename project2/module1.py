@@ -4,13 +4,14 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
 
 class Sdg:
-    def __init__(self, X_train, X_test, y_train, y_test, eta, M, n_epochs):
+    def __init__(self, X_train, X_test, y_train, y_test, eta, alpha, M, n_epochs):
         self.X_train = X_train
         self.X_test = X_test
         self.y_train = y_train
         self.y_test = y_test
 
         self.eta = eta
+        self.alpha = alpha
         self.M = M
         self.n_epochs = n_epochs
         self.m = int(len(self.X_train)/self.M)
@@ -26,31 +27,61 @@ class Sdg:
         ytilde_gd = self.X_train @ self.theta_gd
         print(mean_squared_error(self.y_train, ytilde_gd))
 
-    def stocastichGD_ols(self):
+    def stocastichGD_ols(self, algo, iterations):
+        t_0 = 1
+        t_1 = 50
         theta = np.random.randn(self.X_train.shape[1])
-        for epoch in range(self.n_epochs):
-            for k in range(self.m):
-                random_index = np.random.randint(self.m)
-                xi = self.X_train[random_index:random_index+1]
-                yi = self.y_train[random_index:random_index+1]
-                gradient = 2.0*xi.T@((xi@theta)-yi)
-                theta = theta - self.eta*gradient
-        self.ytilde_sdg_ols = self.X_train @ theta
-        mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
-        print(mse_sdg_ols)
+        v = np.random.randn(self.X_train.shape[1])
+        i = 0
+        while i < iterations:
+            if algo == "momentum":
+                for epoch in range(self.n_epochs):
+                    for k in range(self.m):
+                        random_index = np.random.randint(self.m)
+                        xi = self.X_train[random_index:random_index+1]
+                        yi = self.y_train[random_index:random_index+1]
+                        gradient = 2.0*xi.T@((xi@theta)-yi)
+                        v = self.alpha*v - self.eta*gradient
+                        t = epoch*self.m + k
+                        self.eta = t_0/(t + t_1)
+                        theta = theta + v
+                self.ytilde_sdg_ols = self.X_train @ theta
+                mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
+                print(mse_sdg_ols)
+            else:
+                for epoch in range(self.n_epochs):
+                    for k in range(self.m):
+                        random_index = np.random.randint(self.m)
+                        xi = self.X_train[random_index:random_index+1]
+                        yi = self.y_train[random_index:random_index+1]
+                        gradient = 2.0*xi.T@((xi@theta)-yi)
+                        t = epoch*self.m+k
+                        self.eta = t_0/(t + t_1)
+                        theta = theta - self.eta*gradient
+                self.ytilde_sdg_ols = self.X_train @ theta
+                mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
+                print(mse_sdg_ols)
+            i += 1
 
-    def stocastichGD_ridge(self, lmd):
+    def stocastichGD_ridge(self, lmd, iterations):
+        t_0 = 1
+        t_1 = 50
         theta = np.random.randn(self.X_train.shape[1])
-        for epoch in range(self.n_epochs):
-            for k in range(self.m):
-                random_index =  np.random.randint(self.m)
-                xi = self.X_train[random_index:random_index+1]
-                yi = self.y_train[random_index:random_index+1]
-                gradient = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
-                theta = theta - self.eta*gradient
-        self.ytilde_sdg_ridge = self.X_train @ theta
-        mse_sdg_ridge = mean_squared_error(self.y_train, self.ytilde_sdg_ridge)
-        print(mse_sdg_ridge)
+        i = 0
+        while i < iterations:
+            for epoch in range(self.n_epochs):
+                for k in range(self.m):
+                    random_index =  np.random.randint(self.m)
+                    xi = self.X_train[random_index:random_index+1]
+                    yi = self.y_train[random_index:random_index+1]
+                    gradient = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
+                    t = epoch*self.m+k
+                    self.eta = t_0/(t + t_1)
+                    theta = theta - self.eta*gradient
+            self.ytilde_sdg_ridge = self.X_train @ theta
+            mse_sdg_ridge = mean_squared_error(self.y_train, self.ytilde_sdg_ridge)
+            print(mse_sdg_ridge)
+            i+=1
 
 class Franke:
     def __init__(self, x, y, polydegree, noise):

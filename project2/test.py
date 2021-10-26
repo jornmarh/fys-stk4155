@@ -2,6 +2,7 @@ import autograd.numpy as np
 from autograd import elementwise_grad
 from module1 import Franke
 from sklearn.metrics import mean_squared_error
+from sklearn.linear_model import SGDRegressor
 
 def MSE(beta):
     return ((X_train@beta - z_train)**2)/np.size(z_train)
@@ -29,7 +30,7 @@ def create_miniBatches(X,y, M):
         mini_batches.append((X_mini, Y_mini))
     return mini_batches
 
-
+# Initialise data
 np.random.seed(64)
 N = 100
 polydegree = 5
@@ -39,7 +40,8 @@ x_mesh, y_mesh = np.meshgrid(x,y); x_flat = np.ravel(x_mesh); y_flat = np.ravel(
 
 input = Franke(x_flat, y_flat, polydegree, noise_coef)
 X_train, X_test, z_train, z_test = input.format()
-
+"""
+# Regular OLS
 beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
 ytilde = X_train @ beta
 print(mean_squared_error(z_train, ytilde))
@@ -96,17 +98,84 @@ print(mse_sdg_ls)
 t_0 = 1
 t_1 = 50
 n_epochs = 100
-M = 5
+M = 20
+eta = 0.5
 m = int(len(X_train)/M)
 beta = np.random.randn(X_train.shape[1])
-for epoch in range(n_epochs):
-    for i in range(m):
-        random_index = np.random.randint(m)
-        xi = X_train[random_index:random_index+1]
-        yi = z_train[random_index:random_index+1]
-        gradients = 2 * xi.T @ ((xi @ beta)-yi)
-        eta = schedule(epoch*m+i)
-        beta = beta - eta*gradients
-ytilde_sdg_copy = X_train @ beta
-mse_sdg_copy = mean_squared_error(z_train, ytilde_sdg_copy)
-print(mse_sdg_copy)
+count = 0
+while count < 10:
+    for epoch in range(n_epochs):
+        for i in range(m):
+            random_index = np.random.randint(m)
+            xi = X_train[random_index:random_index+1]
+            yi = z_train[random_index:random_index+1]
+            gradients = 2 * xi.T @ ((xi @ beta)-yi)
+            eta = schedule(epoch*m+i)
+            beta = beta - eta*gradients
+    ytilde_sdg_copy = X_train @ beta
+    mse_sdg_copy = mean_squared_error(z_train, ytilde_sdg_copy)
+    print(mse_sdg_copy)
+    count += 1
+
+# Morten with ls and with momentum
+t_0 = 1
+t_1 = 50
+n_epochs = 100
+alpha = 0.001
+M = 20
+eta = 0.5
+m = int(len(X_train)/M)
+beta = np.random.randn(X_train.shape[1])
+v = np.random.randn(X_train.shape[1])
+count = 0
+while count < 10:
+    for epoch in range(n_epochs):
+        for i in range(m):
+            random_index = np.random.randint(m)
+            xi = X_train[random_index:random_index+1]
+            yi = z_train[random_index:random_index+1]
+            gradients = 2 * xi.T @ ((xi @ beta)-yi)
+            print(gradients)
+            v = alpha*v - eta*gradients
+            eta = schedule(epoch*m+i)
+            beta = beta + v
+    ytilde_sdg_copy = X_train @ beta
+    mse_sdg_copy_momentum = mean_squared_error(z_train, ytilde_sdg_copy)
+    print(mse_sdg_copy_momentum)
+    count += 1
+"""
+# Morten with ls and RMSprop
+t_0 = 1
+t_1 = 50
+n_epochs = 100
+M = 20
+eta = 0.001
+m = int(len(X_train)/M)
+theta = np.random.randn(X_train.shape[1])
+s = np.random.randn(X_train.shape[1])
+delta = 0.9
+eps = 1e-7
+count = 0
+while count < 10:
+    for epoch in range(n_epochs):
+        for i in range(m):
+            random_index = np.random.randint(m)
+            xi = X_train[random_index:random_index+1]
+            yi = z_train[random_index:random_index+1]
+            gradients = 2 * xi.T @ ((xi @ theta)-yi)
+            s = delta*s + np.multiply((1-delta)*gradients,gradients)
+            print(s)
+            eta = schedule(epoch*m+i)
+            theta = theta - np.multiply(eta/np.sqrt(s + eps), gradients)
+    ytilde_sdg_copy = X_train @ theta
+    mse_sdg_copy_rmsprop = mean_squared_error(z_train, ytilde_sdg_copy)
+    #print(mse_sdg_copy_rmsprop)
+    count += 1
+
+
+# sgd with scikit
+sgdreg = SGDRegressor(max_iter = 10000, penalty=None)
+sgdreg.fit(X_train, z_train)
+z_pred_sk = sgdreg.predict(X_train)
+mse_sgd_sk = mean_squared_error(z_train, z_pred_sk)
+print(mse_sgd_sk)
