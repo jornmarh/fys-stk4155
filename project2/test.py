@@ -45,7 +45,7 @@ X_train, X_test, z_train, z_test = input.format()
 beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
 ytilde = X_train @ beta
 print(mean_squared_error(z_train, ytilde))
-
+'''
 #Gradient descent
 max_iter = 10000
 eta = 0.005
@@ -57,7 +57,8 @@ while iter < max_iter:
     iter += 1
 ytilde_gd = X_train @ beta_gd
 print(mean_squared_error(z_train, ytilde_gd))
-
+'''
+'''
 #My method without learning schedule
 n_epochs = 100
 eta = 1/1000
@@ -72,28 +73,31 @@ for epoch in range(n_epochs):
 ytilde_sdg = X_train @ theta
 mse_sdg = mean_squared_error(z_train, ytilde_sdg)
 print(mse_sdg)
-
+'''
 
 #My method with schedule
-t_0 = 1
-t_1 = 50
-n_epochs = 100
-M = 5
-m = int(len(X_train)/M)
-theta_ls = np.random.randn(X_train.shape[1])
-for epoch in range(n_epochs):
-    mini_batches = create_miniBatches(X_train, z_train, M)
-    k = 0
-    for mini_batch in mini_batches:
-        xi, yi = mini_batch
-        gradient_ls = 2.0*xi.T@((xi@theta_ls)-yi)
-        eta_ls = schedule(epoch*m+k)
-        theta_ls = theta_ls - eta_ls*gradient_ls
-        k+=1
-ytilde_sdg_ls = X_train @ theta_ls
-mse_sdg_ls = mean_squared_error(z_train, ytilde_sdg_ls)
-print(mse_sdg_ls)
-
+itr = 0
+while itr < 50:
+    t_0 = 1
+    t_1 = 50
+    n_epochs = 100
+    M = 5
+    m = int(len(X_train)/M)
+    theta_ls = np.random.randn(X_train.shape[1])
+    for epoch in range(n_epochs):
+        mini_batches = create_miniBatches(X_train, z_train, M)
+        k = 0
+        for mini_batch in mini_batches:
+            xi, yi = mini_batch
+            gradient_ls = 2.0*xi.T@((xi@theta_ls)-yi)
+            eta_ls = schedule(epoch*m+k)
+            theta_ls = theta_ls - eta_ls*gradient_ls
+            k+=1
+    ytilde_sdg_ls = X_train @ theta_ls
+    mse_sdg_ls = mean_squared_error(z_train, ytilde_sdg_ls)
+    print(mse_sdg_ls)
+    itr += 1
+'''
 #Morten with learning schedule
 t_0 = 1
 t_1 = 50
