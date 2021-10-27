@@ -40,15 +40,16 @@ x_mesh, y_mesh = np.meshgrid(x,y); x_flat = np.ravel(x_mesh); y_flat = np.ravel(
 
 input = Franke(x_flat, y_flat, polydegree, noise_coef)
 X_train, X_test, z_train, z_test = input.format()
-"""
+
 # Regular OLS
 beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
 ytilde = X_train @ beta
 print(mean_squared_error(z_train, ytilde))
+
 '''
 #Gradient descent
 max_iter = 10000
-eta = 0.005
+eta = 0.05
 iter = 0
 beta_gd = np.random.randn(X_train.shape[1])
 while iter < max_iter:
@@ -58,10 +59,11 @@ while iter < max_iter:
 ytilde_gd = X_train @ beta_gd
 print(mean_squared_error(z_train, ytilde_gd))
 '''
+
 '''
 #My method without learning schedule
 n_epochs = 100
-eta = 1/1000
+eta = 0.0005
 M = 5
 theta = np.random.randn(X_train.shape[1])
 for epoch in range(n_epochs):
@@ -76,51 +78,49 @@ print(mse_sdg)
 '''
 
 #My method with schedule
-itr = 0
-while itr < 50:
-    t_0 = 1
-    t_1 = 50
-    n_epochs = 100
-    M = 5
-    m = int(len(X_train)/M)
-    theta_ls = np.random.randn(X_train.shape[1])
-    for epoch in range(n_epochs):
-        mini_batches = create_miniBatches(X_train, z_train, M)
-        k = 0
-        for mini_batch in mini_batches:
-            xi, yi = mini_batch
-            gradient_ls = 2.0*xi.T@((xi@theta_ls)-yi)
-            eta_ls = schedule(epoch*m+k)
-            theta_ls = theta_ls - eta_ls*gradient_ls
-            k+=1
-    ytilde_sdg_ls = X_train @ theta_ls
-    mse_sdg_ls = mean_squared_error(z_train, ytilde_sdg_ls)
-    print(mse_sdg_ls)
-    itr += 1
+'''
+t_0 = 1
+t_1 = 50
+n_epochs = 100
+M = 5
+m = int(len(X_train)/M)
+theta_ls = np.random.randn(X_train.shape[1])
+for epoch in range(n_epochs):
+    mini_batches = create_miniBatches(X_train, z_train, M)
+    k = 0
+    for mini_batch in mini_batches:
+        xi, yi = mini_batch
+        gradient_ls = 2.0*xi.T@((xi@theta_ls)-yi)
+        eta_ls = schedule(epoch*m+k)
+        theta_ls = theta_ls - eta_ls*gradient_ls
+        k+=1
+ytilde_sdg_ls = X_train @ theta_ls
+mse_sdg_ls = mean_squared_error(z_train, ytilde_sdg_ls)
+print(mse_sdg_ls)
+'''
+
 '''
 #Morten with learning schedule
 t_0 = 1
 t_1 = 50
 n_epochs = 100
-M = 20
-eta = 0.5
+M = 5
 m = int(len(X_train)/M)
 beta = np.random.randn(X_train.shape[1])
-count = 0
-while count < 10:
-    for epoch in range(n_epochs):
-        for i in range(m):
-            random_index = np.random.randint(m)
-            xi = X_train[random_index:random_index+1]
-            yi = z_train[random_index:random_index+1]
-            gradients = 2 * xi.T @ ((xi @ beta)-yi)
-            eta = schedule(epoch*m+i)
-            beta = beta - eta*gradients
-    ytilde_sdg_copy = X_train @ beta
-    mse_sdg_copy = mean_squared_error(z_train, ytilde_sdg_copy)
-    print(mse_sdg_copy)
-    count += 1
+for epoch in range(n_epochs):
+    for i in range(m):
+        random_index = np.random.randint(m)
+        xi = X_train[random_index:random_index+1]
+        yi = z_train[random_index:random_index+1]
+        gradients = 2 * xi.T @ ((xi @ beta)-yi)
+        eta = schedule(epoch*m+i)
+        beta = beta - eta*gradients
+ytilde_sdg_copy = X_train @ beta
+mse_sdg_copy = mean_squared_error(z_train, ytilde_sdg_copy)
+print(mse_sdg_copy)
+'''
 
+'''
 # Morten with ls and with momentum
 t_0 = 1
 t_1 = 50
@@ -147,7 +147,9 @@ while count < 10:
     mse_sdg_copy_momentum = mean_squared_error(z_train, ytilde_sdg_copy)
     print(mse_sdg_copy_momentum)
     count += 1
-"""
+'''
+
+'''
 # Morten with ls and RMSprop
 t_0 = 1
 t_1 = 50
@@ -168,18 +170,18 @@ while count < 10:
             yi = z_train[random_index:random_index+1]
             gradients = 2 * xi.T @ ((xi @ theta)-yi)
             s = delta*s + np.multiply((1-delta)*gradients,gradients)
-            print(s)
-            eta = schedule(epoch*m+i)
             theta = theta - np.multiply(eta/np.sqrt(s + eps), gradients)
     ytilde_sdg_copy = X_train @ theta
     mse_sdg_copy_rmsprop = mean_squared_error(z_train, ytilde_sdg_copy)
     #print(mse_sdg_copy_rmsprop)
     count += 1
+'''
 
-
+'''
 # sgd with scikit
 sgdreg = SGDRegressor(max_iter = 10000, penalty=None)
 sgdreg.fit(X_train, z_train)
 z_pred_sk = sgdreg.predict(X_train)
 mse_sgd_sk = mean_squared_error(z_train, z_pred_sk)
 print(mse_sgd_sk)
+'''
