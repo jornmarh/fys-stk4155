@@ -44,9 +44,9 @@ X_train, X_test, z_train, z_test = input.format()
 # Regular OLS
 beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
 ytilde = X_train @ beta
-print(mean_squared_error(z_train, ytilde))
+print("Analytical", mean_squared_error(z_train, ytilde))
 
-'''
+''''
 #Gradient descent
 max_iter = 10000
 eta = 0.05
@@ -57,10 +57,8 @@ while iter < max_iter:
     beta_gd = beta_gd - eta*gradient
     iter += 1
 ytilde_gd = X_train @ beta_gd
-print(mean_squared_error(z_train, ytilde_gd))
-'''
+print("GD ", mean_squared_error(z_train, ytilde_gd))
 
-'''
 #My method without learning schedule
 n_epochs = 100
 eta = 0.0005
@@ -74,11 +72,9 @@ for epoch in range(n_epochs):
         theta = theta - eta*gradient
 ytilde_sdg = X_train @ theta
 mse_sdg = mean_squared_error(z_train, ytilde_sdg)
-print(mse_sdg)
-'''
+print("SGD mine ", mse_sdg)
 
 #My method with schedule
-'''
 t_0 = 1
 t_1 = 50
 n_epochs = 100
@@ -96,10 +92,8 @@ for epoch in range(n_epochs):
         k+=1
 ytilde_sdg_ls = X_train @ theta_ls
 mse_sdg_ls = mean_squared_error(z_train, ytilde_sdg_ls)
-print(mse_sdg_ls)
-'''
+print("my method with schedule ", mse_sdg_ls)
 
-'''
 #Morten with learning schedule
 t_0 = 1
 t_1 = 50
@@ -117,9 +111,8 @@ for epoch in range(n_epochs):
         beta = beta - eta*gradients
 ytilde_sdg_copy = X_train @ beta
 mse_sdg_copy = mean_squared_error(z_train, ytilde_sdg_copy)
-print(mse_sdg_copy)
+print("Morten with schedule", mse_sdg_copy)
 '''
-
 '''
 # Morten with ls and with momentum
 t_0 = 1
@@ -149,33 +142,31 @@ while count < 10:
     count += 1
 '''
 
-'''
 # Morten with ls and RMSprop
 t_0 = 1
 t_1 = 50
-n_epochs = 100
+n_epochs = 1
 M = 20
 eta = 0.001
-m = int(len(X_train)/M)
+m = 2
 theta = np.random.randn(X_train.shape[1])
 s = np.random.randn(X_train.shape[1])
 delta = 0.9
 eps = 1e-7
 count = 0
-while count < 10:
-    for epoch in range(n_epochs):
-        for i in range(m):
-            random_index = np.random.randint(m)
-            xi = X_train[random_index:random_index+1]
-            yi = z_train[random_index:random_index+1]
-            gradients = 2 * xi.T @ ((xi @ theta)-yi)
-            s = delta*s + np.multiply((1-delta)*gradients,gradients)
-            theta = theta - np.multiply(eta/np.sqrt(s + eps), gradients)
-    ytilde_sdg_copy = X_train @ theta
-    mse_sdg_copy_rmsprop = mean_squared_error(z_train, ytilde_sdg_copy)
-    #print(mse_sdg_copy_rmsprop)
-    count += 1
-'''
+
+for epoch in range(n_epochs):
+    for i in range(m):
+        random_index = np.random.randint(m)
+        xi = X_train[random_index:random_index+1]
+        yi = z_train[random_index:random_index+1]
+        gradients = 2 * xi.T @ ((xi @ theta)-yi)
+        s = delta*s + (1-delta)*np.dot(gradients, gradients)
+        theta = theta - eta/(np.sqrt(s + eps))*gradients
+
+ytilde_sdg_copy = X_train @ theta
+mse_sdg_copy_rmsprop = mean_squared_error(z_train, ytilde_sdg_copy)
+print(mse_sdg_copy_rmsprop)
 
 '''
 # sgd with scikit
