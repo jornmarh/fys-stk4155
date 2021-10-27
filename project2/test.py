@@ -7,8 +7,9 @@ from sklearn.linear_model import SGDRegressor
 def MSE(beta):
     return ((X_train@beta - z_train)**2)/np.size(z_train)
 
-def schedule(t):
-    return t_0/(t + t_1)
+def schedule(eta, decay, epoch):
+    return eta/(1 + decay*epoch)
+
 
 #From https://www.geeksforgeeks.org/ml-mini-batch-gradient-descent-with-python/
 def create_miniBatches(X,y, M):
@@ -47,7 +48,7 @@ beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
 ytilde = X_train @ beta
 print("Analytical", mean_squared_error(z_train, ytilde))
 
-'''
+np.random.seed(64)
 #Gradient descent
 max_iter = 10000
 eta = 0.05
@@ -60,9 +61,10 @@ while iter < max_iter:
 ytilde_gd = X_train @ beta_gd
 print("GD ", mean_squared_error(z_train, ytilde_gd))
 
+np.random.seed(64)
 #My method without learning schedule
 n_epochs = 100
-eta = 0.0005
+eta = 0.005
 M = 5
 theta = np.random.randn(X_train.shape[1])
 for epoch in range(n_epochs):
@@ -75,12 +77,14 @@ ytilde_sdg = X_train @ theta
 mse_sdg = mean_squared_error(z_train, ytilde_sdg)
 print("SGD mine ", mse_sdg)
 
+np.random.seed(64)
 #My method with schedule
-t_0 = 1
-t_1 = 50
 n_epochs = 100
 M = 5
 m = int(len(X_train)/M)
+eta_ls = 0.01
+decay = 1e-6
+
 theta_ls = np.random.randn(X_train.shape[1])
 for epoch in range(n_epochs):
     mini_batches = create_miniBatches(X_train, z_train, M)
@@ -88,13 +92,15 @@ for epoch in range(n_epochs):
     for mini_batch in mini_batches:
         xi, yi = mini_batch
         gradient_ls = 2.0*xi.T@((xi@theta_ls)-yi)
-        eta_ls = schedule(epoch*m+k)
+        eta_ls = schedule(eta_ls, decay, epoch)
         theta_ls = theta_ls - eta_ls*gradient_ls
         k+=1
 ytilde_sdg_ls = X_train @ theta_ls
 mse_sdg_ls = mean_squared_error(z_train, ytilde_sdg_ls)
 print("my method with schedule ", mse_sdg_ls)
 
+
+'''
 #Morten with learning schedule
 t_0 = 1
 t_1 = 50
@@ -113,8 +119,9 @@ for epoch in range(n_epochs):
 ytilde_sdg_copy = X_train @ beta
 mse_sdg_copy = mean_squared_error(z_train, ytilde_sdg_copy)
 print("Morten with schedule", mse_sdg_copy)
+'''
 
-
+'''
 # Morten with ls and with momentum
 t_0 = 1
 t_1 = 50
@@ -142,6 +149,8 @@ while count < 10:
     print(mse_sdg_copy_momentum)
     count += 1
 '''
+
+'''
 # Morten with ls and RMSprop
 t_0 = 1
 t_1 = 50
@@ -154,7 +163,6 @@ s = np.random.randn(X_train.shape[1])
 delta = 0.9
 eps = 1e-7
 count = 0
-print(s)
 for epoch in range(n_epochs):
     for i in range(m):
         random_index = np.random.randint(m)
@@ -164,7 +172,7 @@ for epoch in range(n_epochs):
         g = gradients*gradients
         s = delta*s + (1-delta)*g
         theta = theta - eta/(np.sqrt(s + eps))*gradients
-
 ytilde_sdg_copy = X_train @ theta
 mse_sdg_copy_rmsprop = mean_squared_error(z_train, ytilde_sdg_copy)
 print(mse_sdg_copy_rmsprop)
+'''
