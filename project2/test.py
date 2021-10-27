@@ -43,6 +43,7 @@ x_mesh, y_mesh = np.meshgrid(x,y); x_flat = np.ravel(x_mesh); y_flat = np.ravel(
 input = Franke(x_flat, y_flat, polydegree, noise_coef)
 X_train, X_test, z_train, z_test = input.format()
 
+"""
 # Regular OLS
 beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
 ytilde = X_train @ beta
@@ -100,7 +101,7 @@ mse_sdg_ls = mean_squared_error(z_train, ytilde_sdg_ls)
 print("my method with schedule ", mse_sdg_ls)
 
 
-'''
+
 #Morten with learning schedule
 t_0 = 1
 t_1 = 50
@@ -119,9 +120,9 @@ for epoch in range(n_epochs):
 ytilde_sdg_copy = X_train @ beta
 mse_sdg_copy = mean_squared_error(z_train, ytilde_sdg_copy)
 print("Morten with schedule", mse_sdg_copy)
-'''
 
-'''
+
+
 # Morten with ls and with momentum
 t_0 = 1
 t_1 = 50
@@ -148,31 +149,27 @@ while count < 10:
     mse_sdg_copy_momentum = mean_squared_error(z_train, ytilde_sdg_copy)
     print(mse_sdg_copy_momentum)
     count += 1
-'''
-
-'''
+"""
 # Morten with ls and RMSprop
-t_0 = 1
-t_1 = 50
 n_epochs = 100
 M = 5
-eta = 0.1
+eta = 0.001
 m = int(len(X_train)/M)
 theta = np.random.randn(X_train.shape[1])
-s = np.random.randn(X_train.shape[1])
+#s = np.random.randn(X_train.shape[1]) #gir negative tall, så kvadratroten i første iterasjon gir NaN
+#s = np.random.normal(1,0.15,X_train.shape[1]) #Funker
+s = np.zeros(X_train.shape[1]) #Funker
 delta = 0.9
-eps = 1e-7
+eps = 1e-8
 count = 0
 for epoch in range(n_epochs):
-    for i in range(m):
-        random_index = np.random.randint(m)
-        xi = X_train[random_index:random_index+1]
-        yi = z_train[random_index:random_index+1]
+    mini_batches = create_miniBatches(X_train, z_train, M)
+    for mini_batch in mini_batches:
+        xi,yi = mini_batch
         gradients = 2 * xi.T @ ((xi @ theta)-yi)
         g = gradients*gradients
         s = delta*s + (1-delta)*g
-        theta = theta - eta/(np.sqrt(s + eps))*gradients
+        theta = theta - (eta/np.sqrt(s + eps))*gradients
 ytilde_sdg_copy = X_train @ theta
 mse_sdg_copy_rmsprop = mean_squared_error(z_train, ytilde_sdg_copy)
 print(mse_sdg_copy_rmsprop)
-'''
