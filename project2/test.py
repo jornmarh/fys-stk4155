@@ -32,6 +32,7 @@ def create_miniBatches(X,y, M):
 
 # Initialise data
 np.random.seed(64)
+
 N = 100
 polydegree = 5
 noise_coef = 0.15
@@ -46,7 +47,7 @@ beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
 ytilde = X_train @ beta
 print("Analytical", mean_squared_error(z_train, ytilde))
 
-''''
+'''
 #Gradient descent
 max_iter = 10000
 eta = 0.05
@@ -112,8 +113,8 @@ for epoch in range(n_epochs):
 ytilde_sdg_copy = X_train @ beta
 mse_sdg_copy = mean_squared_error(z_train, ytilde_sdg_copy)
 print("Morten with schedule", mse_sdg_copy)
-'''
-'''
+
+
 # Morten with ls and with momentum
 t_0 = 1
 t_1 = 50
@@ -141,27 +142,27 @@ while count < 10:
     print(mse_sdg_copy_momentum)
     count += 1
 '''
-
 # Morten with ls and RMSprop
 t_0 = 1
 t_1 = 50
-n_epochs = 1
-M = 20
-eta = 0.001
-m = 2
+n_epochs = 100
+M = 5
+eta = 0.1
+m = int(len(X_train)/M)
 theta = np.random.randn(X_train.shape[1])
 s = np.random.randn(X_train.shape[1])
 delta = 0.9
 eps = 1e-7
 count = 0
-
+print(s)
 for epoch in range(n_epochs):
     for i in range(m):
         random_index = np.random.randint(m)
         xi = X_train[random_index:random_index+1]
         yi = z_train[random_index:random_index+1]
         gradients = 2 * xi.T @ ((xi @ theta)-yi)
-        s = delta*s + (1-delta)*np.dot(gradients, gradients)
+        g = gradients*gradients
+        s = delta*s + (1-delta)*g
         theta = theta - eta/(np.sqrt(s + eps))*gradients
 
 ytilde_sdg_copy = X_train @ theta
