@@ -160,21 +160,18 @@ s = np.random.randn(X_train.shape[1])
 delta = 0.9
 eps = 1e-7
 count = 0
-while count < 10:
-    for epoch in range(n_epochs):
-        for i in range(m):
-            random_index = np.random.randint(m)
-            xi = X_train[random_index:random_index+1]
-            yi = z_train[random_index:random_index+1]
-            gradients = 2 * xi.T @ ((xi @ theta)-yi)
-            s = delta*s + np.multiply((1-delta)*gradients,gradients)
-            print(s)
-            eta = schedule(epoch*m+i)
-            theta = theta - np.multiply(eta/np.sqrt(s + eps), gradients)
-    ytilde_sdg_copy = X_train @ theta
-    mse_sdg_copy_rmsprop = mean_squared_error(z_train, ytilde_sdg_copy)
-    #print(mse_sdg_copy_rmsprop)
-    count += 1
+for epoch in range(n_epochs):
+    for i in range(m):
+        random_index = np.random.randint(m)
+        xi = X_train[random_index:random_index+1]
+        yi = z_train[random_index:random_index+1]
+        gradients = 2 * xi.T @ ((xi @ theta)-yi)
+        s = delta*s + (1-delta) * np.multiply(gradients, gradients)
+        theta = theta - np.multiply(eta/np.sqrt(s + eps), gradients)
+ytilde_sdg_copy = X_train @ theta
+mse_sdg_copy_rmsprop = mean_squared_error(z_train, ytilde_sdg_copy)
+print(mse_sdg_copy_rmsprop)
+count += 1
 
 
 # sgd with scikit
@@ -182,4 +179,4 @@ sgdreg = SGDRegressor(max_iter = 10000, penalty=None)
 sgdreg.fit(X_train, z_train)
 z_pred_sk = sgdreg.predict(X_train)
 mse_sgd_sk = mean_squared_error(z_train, z_pred_sk)
-print(mse_sgd_sk)
+#print(mse_sgd_sk)

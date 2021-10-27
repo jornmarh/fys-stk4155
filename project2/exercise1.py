@@ -43,4 +43,4 @@ sgdRegressor = Sdg(X_train, X_test, z_train, z_test, eta, alpha, M, n_epochs)
 
 #sgdRegressor.grad_descent(1000)
 sgdRegressor.stocastichGD_ols('hei', 10)
-sgdRegressor.stocastichGD_ridge(0,10)
+#sgdRegressor.stocastichGD_ridge(0,10)
