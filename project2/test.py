@@ -1,3 +1,15 @@
+'''
+Author: Andreas Dyve, Jørn-Marcus Høylo-Rosenberg
+Date: october 2021
+'''
+
+'''
+toDo:
+- Plot som funksjon av n_epochs
+- Tuning av eta, M
+- Samme med ridge, heat map av lambda og eta
+'''
+
 import autograd.numpy as np
 from autograd import elementwise_grad
 from module1 import Franke
@@ -9,7 +21,6 @@ def MSE(beta):
 
 def schedule(eta, decay, epoch):
     return eta/(1 + decay*epoch)
-
 
 #From https://www.geeksforgeeks.org/ml-mini-batch-gradient-descent-with-python/
 def create_miniBatches(X,y, M):
@@ -33,7 +44,6 @@ def create_miniBatches(X,y, M):
 
 # Initialise data
 np.random.seed(64)
-
 N = 100
 polydegree = 5
 noise_coef = 0.15
