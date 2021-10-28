@@ -24,7 +24,7 @@ def ridge_regression(X_train, y_train, lmd):
      print(mse)
 
 np.random.seed(64)
-N = 20
+N = 100
 polydegree = 5
 noise_coef = 0.15
 x = np.sort(np.random.uniform(0, 1, N)); y = np.sort(np.random.uniform(0, 1, N))
@@ -33,14 +33,24 @@ x_mesh, y_mesh = np.meshgrid(x,y); x_flat = np.ravel(x_mesh); y_flat = np.ravel(
 input = Franke(x_flat, y_flat, polydegree, noise_coef)
 X_train, X_test, z_train, z_test = input.format()
 
-eta = 0.005
+eta = 0.001
 alpha = 0.01
-M = 10
+M = 5
 n_epochs = 100
-m = int(len(X_train)/M)
+m = int(len(X_train)/M) #8000/M
 
-sgdRegressor = Sdg(X_train, X_test, z_train, z_test, eta, alpha, M, n_epochs)
-
-#sgdRegressor.grad_descent(1000)
-sgdRegressor.stocastichGD_ols('hei', 10)
-#sgdRegressor.stocastichGD_ridge(0,10)
+epoch_numbers = np.arange(30)
+mse = np.zeros(len(epoch_numbers))
+i = 0
+for epoch_number in epoch_numbers:
+    sgdRegressor = Sdg(X_train, X_test, z_train, z_test, eta, alpha, M, epoch_number)
+    #sgdRegressor.grad_descent(1000)
+    mse[i] = sgdRegressor.stocastichGD_ols('rmsprop')
+    #sgdRegressor.stocastichGD_ridge(0,10)
+    i+=1
+plt.plot(epoch_numbers, mse, label='lr: %.4f, m: %i' %(sgdRegressor.eta, sgdRegressor.m))
+plt.xlabel('Number of epochs')
+plt.ylabel('mse')
+plt.legend()
+plt.ylim(0,1)
+plt.show()

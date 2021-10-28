@@ -122,7 +122,6 @@ theta = np.random.randn(X_train.shape[1])
 s = np.zeros(X_train.shape[1]) #Funker
 delta = 0.9
 eps = 1e-8
-count = 0
 for epoch in range(n_epochs):
     mini_batches = create_miniBatches(X_train, z_train, M)
     for mini_batch in mini_batches:

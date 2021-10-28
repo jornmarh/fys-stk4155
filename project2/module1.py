@@ -47,63 +47,115 @@ class Sdg:
             iter += 1
         self.theta_gd = beta
         ytilde_gd = self.X_train @ self.theta_gd
-        print(mean_squared_error(self.y_train, ytilde_gd))
+        mse = mean_squared_error(self.y_train, ytilde_gd)
+        print(mse)
+        return mse
 
-    def stocastichGD_ols(self, algo, iterations):
+    def stocastichGD_ols(self, algo='normalsgd'):
         t_0 = 1
         t_1 = 50
         theta = np.random.randn(self.X_train.shape[1])
+
+        # RMSprop parameters
+        s = np.random.normal(1,0.15,self.X_train.shape[1]) # Must be initially positive
+        beta = 0.9
+        eps = 1e-8
+
+        # SGD with momentum parameters
         v = np.random.randn(self.X_train.shape[1])
-        i = 0
-        while i < iterations:
-            if algo == "momentum":
+
+        if algo == "rmsprop":
+            for epoch in range(self.n_epochs):
+                mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
+                for mini_batch in mini_batches:
+                    xi,yi = mini_batch
+                    g = 2.0*xi.T @ ((xi @ theta)-yi)
+                    s = beta*s + (1-beta)*g**2
+                    theta = theta - (self.eta/np.sqrt(s + eps))*g
+            self.ytilde_sdg_ols = self.X_train @ theta
+            mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
+            print("SDG with RMSprop algo with %i epochs: %.5f" %(self.n_epochs, mse_sdg_ols))
+            return mse_sdg_ols
+
+        elif algo == "momentum":
                 for epoch in range(self.n_epochs):
-                    for k in range(self.m):
-                        random_index = np.random.randint(self.m)
-                        xi = self.X_train[random_index:random_index+1]
-                        yi = self.y_train[random_index:random_index+1]
-                        gradient = 2.0*xi.T@((xi@theta)-yi)
-                        v = self.alpha*v - self.eta*gradient
+                    mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
+                    for mini_batch in mini_batches:
+                        xi,yi = mini_batch
+                        g = 2.0*xi.T @ ((xi @ theta)-yi)
+                        v = self.alpha*v - self.eta*g
                         t = epoch*self.m + k
                         self.eta = t_0/(t + t_1)
                         theta = theta + v
                 self.ytilde_sdg_ols = self.X_train @ theta
                 mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
-                print(mse_sdg_ols)
-            else:
-                for epoch in range(self.n_epochs):
-                    for k in range(self.m):
-                        random_index = np.random.randint(self.m)
-                        xi = self.X_train[random_index:random_index+1]
-                        yi = self.y_train[random_index:random_index+1]
-                        gradient = 2.0*xi.T@((xi@theta)-yi)
-                        t = epoch*self.m+k
-                        self.eta = t_0/(t + t_1)
-                        theta = theta - self.eta*gradient
-                self.ytilde_sdg_ols = self.X_train @ theta
-                mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
-                print(mse_sdg_ols)
-            i += 1
+                print("SDG with momentum algo ", mse_sdg_ols)
 
-    def stocastichGD_ridge(self, lmd, iterations):
+        elif algo == "normalsgd":
+            for epoch in range(self.n_epochs):
+                mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
+                for mini_batch in mini_batches:
+                    xi,yi = mini_batch
+                    g = 2.0*xi.T@((xi@theta)-yi)
+                    t = epoch*self.m+k
+                    self.eta = t_0/(t + t_1)
+                    theta = theta - self.eta*g
+            self.ytilde_sdg_ols = self.X_train @ theta
+            mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
+            print("Normal SDG ", mse_sdg_ols)
+
+    def stocastichGD_ridge(self, lmd, algo):
         t_0 = 1
         t_1 = 50
         theta = np.random.randn(self.X_train.shape[1])
-        i = 0
-        while i < iterations:
+
+        # RMSprop parameters
+        s = np.random.normal(1,0.15,self.X_train.shape[1]) # Must be initially positive
+        beta = 0.9
+        eps = 1e-8
+
+        # SGD with momentum parameters
+        v = np.random.randn(self.X_train.shape[1])
+
+        if algo == "rmsprop":
             for epoch in range(self.n_epochs):
-                for k in range(self.m):
-                    random_index =  np.random.randint(self.m)
-                    xi = self.X_train[random_index:random_index+1]
-                    yi = self.y_train[random_index:random_index+1]
-                    gradient = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
-                    t = epoch*self.m+k
-                    self.eta = t_0/(t + t_1)
-                    theta = theta - self.eta*gradient
+                mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
+                for mini_batch in mini_batches:
+                    xi,yi = mini_batch
+                    g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
+                    s = beta*s + (1-beta)*g**2
+                    theta = theta - (self.eta/np.sqrt(s + eps))*g
             self.ytilde_sdg_ridge = self.X_train @ theta
             mse_sdg_ridge = mean_squared_error(self.y_train, self.ytilde_sdg_ridge)
-            print(mse_sdg_ridge)
-            i+=1
+            print("Ridge SDG with RMSprop algo with %i epochs: %.5f" %(self.n_epochs, mse_sdg_ridge))
+            return mse_sdg_ridge
+
+        elif algo == "momentum":
+                for epoch in range(self.n_epochs):
+                    mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
+                    for mini_batch in mini_batches:
+                        xi,yi = mini_batch
+                        g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
+                        v = self.alpha*v - self.eta*g
+                        t = epoch*self.m + k
+                        self.eta = t_0/(t + t_1)
+                        theta = theta + v
+                self.ytilde_sdg_ridge = self.X_train @ theta
+                mse_sdg_ridge = mean_squared_error(self.y_train, self.ytilde_sdg_ridge)
+                print("Ridge SDG with momentum algo ", mse_sdg_ridge)
+
+        elif algo == "normalsgd":
+            for epoch in range(self.n_epochs):
+                mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
+                for mini_batch in mini_batches:
+                    xi,yi = mini_batch
+                    g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
+                    t = epoch*self.m+k
+                    self.eta = t_0/(t + t_1)
+                    theta = theta - self.eta*g
+            self.ytilde_sdg_ridge = self.X_train @ theta
+            mse_sdg_ridge = mean_squared_error(self.y_train, self.ytilde_sdg_ridge)
+            print("Normal Ridge SDG ", mse_sdg_ridge)
 
 class Franke:
     def __init__(self, x, y, polydegree, noise):
