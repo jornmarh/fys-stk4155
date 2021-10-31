@@ -45,7 +45,7 @@ i = 0
 for epoch_number in epoch_numbers:
     sgdRegressor = Sdg(X_train, X_test, z_train, z_test, eta, alpha, M, epoch_number)
     #sgdRegressor.grad_descent(1000)
-    mse[i] = sgdRegressor.stocastichGD_ols('rmsprop')
+    mse[i] = sgdRegressor.stocastichGD_ols('momentum')
     #sgdRegressor.stocastichGD_ridge(0,10)
     i+=1
 plt.plot(epoch_numbers, mse, label='lr: %.4f, m: %i' %(sgdRegressor.eta, sgdRegressor.m))

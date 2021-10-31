@@ -1,3 +1,4 @@
 
 *.icloud
 project2/__pycache__/module1.cpython-38.pyc
+*.tif

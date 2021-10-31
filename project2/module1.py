@@ -42,8 +42,8 @@ class Sdg:
         iter = 0
         beta = np.random.randn(self.X_train.shape[1])
         while iter < max_iter:
-            gradient = (2.0/len(self.X_train))*self.X_train.T @ (self.X_train @ beta - self.y_train)
-            beta = beta - self.eta*gradient
+            g = (2.0/len(self.X_train))*self.X_train.T @ (self.X_train @ beta - self.y_train)
+            beta = beta - self.eta*g
             iter += 1
         self.theta_gd = beta
         ytilde_gd = self.X_train @ self.theta_gd
@@ -54,6 +54,7 @@ class Sdg:
     def stocastichGD_ols(self, algo='normalsgd'):
         t_0 = 1
         t_1 = 50
+        np.random.seed(64)
         theta = np.random.randn(self.X_train.shape[1])
 
         # RMSprop parameters
@@ -80,6 +81,7 @@ class Sdg:
         elif algo == "momentum":
                 for epoch in range(self.n_epochs):
                     mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
+                    k=0
                     for mini_batch in mini_batches:
                         xi,yi = mini_batch
                         g = 2.0*xi.T @ ((xi @ theta)-yi)
@@ -87,6 +89,7 @@ class Sdg:
                         t = epoch*self.m + k
                         self.eta = t_0/(t + t_1)
                         theta = theta + v
+                        k+=1
                 self.ytilde_sdg_ols = self.X_train @ theta
                 mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
                 print("SDG with momentum algo ", mse_sdg_ols)
@@ -107,6 +110,7 @@ class Sdg:
     def stocastichGD_ridge(self, lmd, algo):
         t_0 = 1
         t_1 = 50
+        np.random.seed(64)
         theta = np.random.randn(self.X_train.shape[1])
 
         # RMSprop parameters
