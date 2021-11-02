@@ -4,14 +4,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
 
 class Sdg:
-    def __init__(self, X_train, X_test, y_train, y_test, eta, alpha, M, n_epochs):
+    def __init__(self, X_train, X_test, y_train, y_test, eta, M, n_epochs):
         self.X_train = X_train
         self.X_test = X_test
         self.y_train = y_train
         self.y_test = y_test
 
         self.eta = eta
-        self.alpha = alpha
         self.M = M
         self.n_epochs = n_epochs
         self.m = int(len(self.X_train)/self.M)
@@ -39,6 +38,7 @@ class Sdg:
         return self.eta/(1 + decay*epoch)
 
     def grad_descent(self, max_iter):
+        np.random.seed(64)
         iter = 0
         beta = np.random.randn(self.X_train.shape[1])
         while iter < max_iter:
@@ -51,18 +51,14 @@ class Sdg:
         print(mse)
         return mse
 
-    def stocastichGD_ols(self, algo='normalsgd'):
-        t_0 = 1
-        t_1 = 50
+    def stocastichGD_ols(self, algo='normalsgd', gamma=0.01, beta=0.9, eps=1e-8):
         np.random.seed(64)
         theta = np.random.randn(self.X_train.shape[1])
 
-        # RMSprop parameters
+        # RMSprop term
         s = np.random.normal(1,0.15,self.X_train.shape[1]) # Must be initially positive
-        beta = 0.9
-        eps = 1e-8
 
-        # SGD with momentum parameters
+        # Momentum velocity term
         v = np.random.randn(self.X_train.shape[1])
 
         if algo == "rmsprop":
@@ -73,26 +69,24 @@ class Sdg:
                     g = 2.0*xi.T @ ((xi @ theta)-yi)
                     s = beta*s + (1-beta)*g**2
                     theta = theta - (self.eta/np.sqrt(s + eps))*g
-            self.ytilde_sdg_ols = self.X_train @ theta
-            mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
-            print("SDG with RMSprop algo with %i epochs: %.5f" %(self.n_epochs, mse_sdg_ols))
-            return mse_sdg_ols
+            self.ytilde_sgd_ols = self.X_train @ theta
+            mse_sgd_ols = mean_squared_error(self.y_train, self.ytilde_sgd_ols)
+            #print(mse_sgd_ols)
+            return mse_sgd_ols
 
         elif algo == "momentum":
-                for epoch in range(self.n_epochs):
-                    mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
-                    k=0
-                    for mini_batch in mini_batches:
-                        xi,yi = mini_batch
-                        g = 2.0*xi.T @ ((xi @ theta)-yi)
-                        v = self.alpha*v - self.eta*g
-                        t = epoch*self.m + k
-                        self.eta = t_0/(t + t_1)
-                        theta = theta + v
-                        k+=1
-                self.ytilde_sdg_ols = self.X_train @ theta
-                mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
-                print("SDG with momentum algo ", mse_sdg_ols)
+            for epoch in range(self.n_epochs):
+                mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
+                for mini_batch in mini_batches:
+                    xi,yi = mini_batch
+                    g = 2.0*xi.T @ ((xi @ theta)-yi)
+                    v = gamma*v - self.eta*g
+                    self.eta = self.schedule(1e-6, epoch)
+                    theta = theta + v
+            self.ytilde_sgd_ols = self.X_train @ theta
+            mse_sgd_ols = mean_squared_error(self.y_train, self.ytilde_sgd_ols)
+            print(mse_sgd_ols)
+            return mse_sgd_ols
 
         elif algo == "normalsgd":
             for epoch in range(self.n_epochs):
@@ -100,25 +94,21 @@ class Sdg:
                 for mini_batch in mini_batches:
                     xi,yi = mini_batch
                     g = 2.0*xi.T@((xi@theta)-yi)
-                    t = epoch*self.m+k
-                    self.eta = t_0/(t + t_1)
+                    self.eta = self.schedule(1e-6, epoch)
                     theta = theta - self.eta*g
-            self.ytilde_sdg_ols = self.X_train @ theta
-            mse_sdg_ols = mean_squared_error(self.y_train, self.ytilde_sdg_ols)
-            print("Normal SDG ", mse_sdg_ols)
+            self.ytilde_sgd_ols = self.X_train @ theta
+            mse_sgd_ols = mean_squared_error(self.y_train, self.ytilde_sgd_ols)
+            #print(mse_sgd_ols)
+            return mse_sgd_ols
 
-    def stocastichGD_ridge(self, lmd, algo):
-        t_0 = 1
-        t_1 = 50
+    def stocastichGD_ridge(self, lmd, algo='normalsgd', beta=0.9, eps=1e-8):
         np.random.seed(64)
         theta = np.random.randn(self.X_train.shape[1])
 
-        # RMSprop parameters
+        # RMSprop term
         s = np.random.normal(1,0.15,self.X_train.shape[1]) # Must be initially positive
-        beta = 0.9
-        eps = 1e-8
 
-        # SGD with momentum parameters
+        # SGD velocity term
         v = np.random.randn(self.X_train.shape[1])
 
         if algo == "rmsprop":
@@ -129,10 +119,10 @@ class Sdg:
                     g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
                     s = beta*s + (1-beta)*g**2
                     theta = theta - (self.eta/np.sqrt(s + eps))*g
-            self.ytilde_sdg_ridge = self.X_train @ theta
-            mse_sdg_ridge = mean_squared_error(self.y_train, self.ytilde_sdg_ridge)
-            print("Ridge SDG with RMSprop algo with %i epochs: %.5f" %(self.n_epochs, mse_sdg_ridge))
-            return mse_sdg_ridge
+            self.ytilde_sgd_ridge = self.X_train @ theta
+            mse_sgd_ridge = mean_squared_error(self.y_train, self.ytilde_sgd_ridge)
+            print(mse_sgd_ridge)
+            return mse_sgd_ridge
 
         elif algo == "momentum":
                 for epoch in range(self.n_epochs):
@@ -141,12 +131,12 @@ class Sdg:
                         xi,yi = mini_batch
                         g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
                         v = self.alpha*v - self.eta*g
-                        t = epoch*self.m + k
-                        self.eta = t_0/(t + t_1)
+                        self.eta = self.schedule(1e-6, epoch)
                         theta = theta + v
-                self.ytilde_sdg_ridge = self.X_train @ theta
-                mse_sdg_ridge = mean_squared_error(self.y_train, self.ytilde_sdg_ridge)
-                print("Ridge SDG with momentum algo ", mse_sdg_ridge)
+                self.ytilde_sgd_ridge = self.X_train @ theta
+                mse_sgd_ridge = mean_squared_error(self.y_train, self.ytilde_sgd_ridge)
+                print(mse_sgd_ridge)
+                return mse_sgd_ridge
 
         elif algo == "normalsgd":
             for epoch in range(self.n_epochs):
@@ -154,12 +144,12 @@ class Sdg:
                 for mini_batch in mini_batches:
                     xi,yi = mini_batch
                     g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
-                    t = epoch*self.m+k
-                    self.eta = t_0/(t + t_1)
+                    self.eta = self.schedule(1e-6, epoch)
                     theta = theta - self.eta*g
-            self.ytilde_sdg_ridge = self.X_train @ theta
-            mse_sdg_ridge = mean_squared_error(self.y_train, self.ytilde_sdg_ridge)
-            print("Normal Ridge SDG ", mse_sdg_ridge)
+            self.ytilde_sgd_ridge = self.X_train @ theta
+            mse_sgd_ridge = mean_squared_error(self.y_train, self.ytilde_sgd_ridge)
+            print(mse_sgd_ridge)
+            return mse_sgd_ridge
 
 class Franke:
     def __init__(self, x, y, polydegree, noise):

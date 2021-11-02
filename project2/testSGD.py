@@ -53,7 +53,7 @@ x_mesh, y_mesh = np.meshgrid(x,y); x_flat = np.ravel(x_mesh); y_flat = np.ravel(
 input = Franke(x_flat, y_flat, polydegree, noise_coef)
 X_train, X_test, z_train, z_test = input.format()
 print("MSE scores")
-
+"""
 # Regular OLS
 beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ z_train
 ytilde = X_train @ beta
@@ -71,11 +71,11 @@ while iter < max_iter:
     iter += 1
 ytilde_gd = X_train @ beta_gd
 print("GD ", mean_squared_error(z_train, ytilde_gd))
-
+"""
 #SGD Without timeschedule
 np.random.seed(64)
 n_epochs = 100
-eta = 0.005
+eta = 0.001
 M = 5
 theta = np.random.randn(X_train.shape[1])
 for epoch in range(n_epochs):
@@ -84,10 +84,10 @@ for epoch in range(n_epochs):
         xi, yi = mini_batch
         gradient = 2.0*xi.T@((xi@theta)-yi)
         theta = theta - eta*gradient
-ytilde_sdg = X_train @ theta
-mse_sdg = mean_squared_error(z_train, ytilde_sdg)
+ytilde_sdg = X_test @ theta
+mse_sdg = mean_squared_error(z_test, ytilde_sdg)
 print("SGD without timeschedule ", mse_sdg)
-
+"""
 #SGD With timeschedule
 np.random.seed(64)
 n_epochs = 100
@@ -133,3 +133,4 @@ for epoch in range(n_epochs):
 ytilde_sdg_copy = X_train @ theta
 mse_sdg_copy_rmsprop = mean_squared_error(z_train, ytilde_sdg_copy)
 print("SDG with RMSPROP algo ", mse_sdg_copy_rmsprop)
+"""
