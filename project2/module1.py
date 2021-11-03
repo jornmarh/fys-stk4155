@@ -68,7 +68,7 @@ class Sdg:
                     xi,yi = mini_batch
                     g = 2.0*xi.T @ ((xi @ theta)-yi)
                     s = beta*s + (1-beta)*g**2
-                    theta = theta - (self.eta/np.sqrt(s + eps))*g
+                    theta = theta - self.eta*g/(np.sqrt(s + eps))
             self.ytilde_sgd_ols = self.X_train @ theta
             mse_sgd_ols = mean_squared_error(self.y_train, self.ytilde_sgd_ols)
             #print(mse_sgd_ols)
@@ -81,7 +81,7 @@ class Sdg:
                     xi,yi = mini_batch
                     g = 2.0*xi.T @ ((xi @ theta)-yi)
                     v = gamma*v - self.eta*g
-                    self.eta = self.schedule(1e-6, epoch)
+                    #self.eta = self.schedule(1e-6, epoch)
                     theta = theta + v
             self.ytilde_sgd_ols = self.X_train @ theta
             mse_sgd_ols = mean_squared_error(self.y_train, self.ytilde_sgd_ols)
@@ -94,7 +94,7 @@ class Sdg:
                 for mini_batch in mini_batches:
                     xi,yi = mini_batch
                     g = 2.0*xi.T@((xi@theta)-yi)
-                    self.eta = self.schedule(1e-6, epoch)
+                    #self.eta = self.schedule(1e-6, epoch)
                     theta = theta - self.eta*g
             self.ytilde_sgd_ols = self.X_train @ theta
             mse_sgd_ols = mean_squared_error(self.y_train, self.ytilde_sgd_ols)
@@ -117,7 +117,7 @@ class Sdg:
                 for mini_batch in mini_batches:
                     xi,yi = mini_batch
                     g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
-                    s = beta*s + (1-beta)*g**2
+                    s = beta*s + (1-beta)*np.dot(g,g)
                     theta = theta - (self.eta/np.sqrt(s + eps))*g
             self.ytilde_sgd_ridge = self.X_train @ theta
             mse_sgd_ridge = mean_squared_error(self.y_train, self.ytilde_sgd_ridge)
@@ -131,7 +131,7 @@ class Sdg:
                         xi,yi = mini_batch
                         g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
                         v = self.alpha*v - self.eta*g
-                        self.eta = self.schedule(1e-6, epoch)
+                        #self.eta = self.schedule(1e-6, epoch)
                         theta = theta + v
                 self.ytilde_sgd_ridge = self.X_train @ theta
                 mse_sgd_ridge = mean_squared_error(self.y_train, self.ytilde_sgd_ridge)
@@ -144,11 +144,14 @@ class Sdg:
                 for mini_batch in mini_batches:
                     xi,yi = mini_batch
                     g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
-                    self.eta = self.schedule(1e-6, epoch)
+                    #self.eta = self.schedule(1e-6, epoch)
                     theta = theta - self.eta*g
             self.ytilde_sgd_ridge = self.X_train @ theta
             mse_sgd_ridge = mean_squared_error(self.y_train, self.ytilde_sgd_ridge)
-            print(mse_sgd_ridge)
+            print("mse: ", mse_sgd_ridge)
+            print("lmd: ", lmd)
+            print("eta: ", self.eta)
+            print("")
             return mse_sgd_ridge
 
 class Franke:
