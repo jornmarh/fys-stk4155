@@ -2,7 +2,8 @@ import autograd.numpy as np
 from autograd import grad
 import matplotlib.pyplot as plt
 from sklearn import datasets
-from module1 import Sdg
+from module1 import Sdg, Franke
+from sklearn.metrics import mean_squared_error, r2_score
 
 class NN:
     def __init__(self,
@@ -77,21 +78,17 @@ class NN:
             z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
             a_h = self.sigmoid(z_h); self.activations.append(a_h)
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
-        a_o = self.sigmoid(z_o); self.activations.append(a_o)
+        a_o = z_o; self.activations.append(a_o)
         return
 
     def feed_forward_predict(self, X): #Final feed forward of a given test set
         z_h = np.matmul(X, self.weights[0]) + self.biases[0]
         a_h = self.sigmoid(z_h)
-
         for layer in range(1, self.n_hidden_layers):
             z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
             a_h = self.sigmoid(z_h)
-
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
-        a_o = self.sigmoid(z_o)
-
-        return a_o
+        return z_o
 
     def back_propagation(self): #Back propagation algorithm
         def grad(delta_l, layer):
@@ -133,25 +130,33 @@ class NN:
                 self.back_propagation()
 
     def predict(self, X, t): #Function for predicting a binary classification set
-        y = self.feed_forward_predict(X); print(y)
-        for i in range(len(y)):
-            if y[i] < 0.5:
-                y[i] = 0
-            elif y[i] > 0.5:
-                y[i] = 1
-        return self.accuracy_score(t.reshape(-1,1), y)
+        y = self.feed_forward_predict(X);
+        return mean_squared_error(t, y)
 
 
-np.random.seed(0)
-# Design matrix
-X = np.array([ [0, 0], [0, 1], [1, 0],[1, 1]],dtype=np.float64)
-yXOR = np.array( [ 0, 1 ,1, 0])
+def FrankeFunction(x,y):
+	term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
+	term2 = 0.75*np.exp(-((9*x+1)**2)/49.0 - 0.1*(9*y+1))
+	term3 = 0.5*np.exp(-(9*x-7)**2/4.0 - 0.25*((9*y-3)**2))
+	term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
+	return term1 + term2 + term3 + term4
+
+
+#Initilize data
+np.random.seed(64)
+N = 20
+x = np.sort(np.random.uniform(0, 1, N))
+y = np.sort(np.random.uniform(0, 1, N))
+xmesh, ymesh = np.meshgrid(x,y)
+xflat = np.ravel(xmesh)
+yflat = np.ravel(ymesh)
+z = FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N)
+X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
 
 # Defining the neural network
-n_hidden_neurons = 2
+n_hidden_neurons = 21
 n_hidden_layers = 2
 
-
-network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons) #Create network
-network1.train(1000, 18, 0.5, 0.0001) #Train
-score = network1.predict(X, yXOR); print(score) #Evalute model
+network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons) #Create network
+network1.train(1000, 5, 0.005, 0.0001) #Train
+score = network1.predict(X_test, z_test); print(score) #Evalute model

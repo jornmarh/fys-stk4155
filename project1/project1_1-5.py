@@ -25,45 +25,17 @@ def FrankeFunction(x,y):
 	term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
 	return term1 + term2 + term3 + term4
 
-def create_X(x, y, n):
-	if len(x.shape) > 1:
-		x = np.ravel(x)
-		y = np.ravel(y)
-
-	N = len(x)
-	l = int((n+1)*(n+2)/2)		# Number of elements in beta
-	X = np.ones((N,l))
-
-	for i in range(1,n+1):
-		q = int((i)*(i+1)/2)
-		for k in range(i+1):
-			X[:,q+k] = (x**(i-k))*(y**k)
-	return X
-
-def scale(X_train, X_test, z_train, z_test):
-    scaler = StandardScaler() #Utilizing scikit's standardscaler
-
-    scaler_x = scaler.fit(X_train) #Scaling x-data
-    X_train_scikit = scaler_x.transform(X_train)
-    X_test_scikit = scaler_x.transform(X_test)
-
-    scaler_z = scaler.fit(z_train.reshape(-1,1)) #Scaling z-data
-    z_train_scikit = scaler_z.transform(z_train.reshape(-1,1)).ravel()
-    z_test_scikit = scaler_z.transform(z_test.reshape(-1,1)).ravel()
-
-    return X_train_scikit, X_test_scikit, z_train_scikit, z_test_scikit
 
 #Initilize data
-seed(42)
+seed(64)
 n = 5
-maxdegree = 11
 N = 20
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
-z = FrankeFunction(xflat, yflat) + 0.5*np.random.randn(N*N)
+z = FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N)
 
 
 #Bootstrap
