@@ -1,9 +1,10 @@
-import autograd.numpy as np
-from autograd import grad
+import numpy as np
 import matplotlib.pyplot as plt
-from sklearn import datasets
 from module1 import Sdg, Franke
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
 
 class NN:
     def __init__(self,
@@ -126,11 +127,17 @@ class NN:
             mini_batches = self.create_miniBatches(self.X_train, self.t, M)
             for mini_batch in mini_batches:
                 self.xi, self.yi = mini_batch
+                print("")
+                print(self.xi)
+                print("")
+                print(self.yi)
+                print("")
                 self.feed_forward_train()
                 self.back_propagation()
 
     def predict(self, X, t): #Function for predicting a binary classification set
         y = self.feed_forward_predict(X);
+        #print(y)
         return mean_squared_error(t, y)
 
 
@@ -150,13 +157,20 @@ y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh)
 yflat = np.ravel(ymesh)
-z = FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N)
+
+z = (FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N))
 X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
 
+X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
+scaler = StandardScaler()  # Utilizing scikit's standardscaler
+scaler_x = scaler.fit(X_train)  # Scaling x-data
+X_train = scaler_x.transform(X_train)
+X_test = scaler_x.transform(X_test)
+
 # Defining the neural network
-n_hidden_neurons = 21
+n_hidden_neurons = 30
 n_hidden_layers = 2
 
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons) #Create network
-network1.train(1000, 5, 0.005, 0.0001) #Train
+network1.train(100, 5, 0.005, 0.0001) #Train
 score = network1.predict(X_test, z_test); print(score) #Evalute model
