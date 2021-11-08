@@ -37,31 +37,15 @@ X_train, X_test, z_train, z_test = input.format()
 
 # OLS regression for comparison
 print("Analytical result from OLS:", ols_regression(X_train,z_train))
+
+
 """
-# Calculate MSE as function of number of epochs
-epoch_nums = np.arange(100)
-batch_size = 5
-mse_epochs = np.zeros(len(epoch_nums))
-eta = 0.001
-
-# MSE as function of epochs with constant learning rate
-print('MSE as function of epochs with constant learning rate')
-for i in range(len(epoch_nums)):
-    sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, batch_size, epoch_nums[i])
-    mse_epochs[i] = sgdreg.stocastichGD_ols()
-    print(mse_epochs[i])
-
-plt.plot(epoch_nums, mse_epochs, label='Batch size = %i' %(batch_size))
-plt.title('MSE as function of the number of epochs')
-plt.xlabel('Number of epochs')
-plt.ylabel('MSE')
-plt.ylim(0,1)
-plt.legend()
-plt.show()
-
 # MSE as function of epochs with different learning rates
 print('MSE as function of epochs with different learning rates')
 etas = [0.0001,0.0005,0.001,0.005]
+etas = [0.001,0.005]
+epoch_nums = np.arange(50)
+batch_size = 20
 mse = np.zeros((len(epoch_nums),len(etas)))
 print(mse.shape)
 
@@ -73,8 +57,8 @@ for i in range(len(epoch_nums)):
 
 plt.plot(epoch_nums, mse[:,0], label='$\eta$ = %.4f' %(etas[0]))
 plt.plot(epoch_nums, mse[:,1], label='$\eta$ = %.4f' %(etas[1]))
-plt.plot(epoch_nums, mse[:,2], label='$\eta$ = %.3f' %(etas[2]))
-plt.plot(epoch_nums, mse[:,3], label='$\eta$ = %.3f' %(etas[3]))
+#plt.plot(epoch_nums, mse[:,2], label='$\eta$ = %.3f' %(etas[2]))
+#plt.plot(epoch_nums, mse[:,3], label='$\eta$ = %.3f' %(etas[3]))
 plt.title('MSE as function of the number of epochs with different learning rates')
 plt.xlabel('Number of epochs')
 plt.ylabel('MSE')
@@ -82,10 +66,12 @@ plt.ylim(0,1)
 plt.legend()
 plt.show()
 
-"""
-# MSE as function of batch size with constant learning rate
-batch_sizes = np.arange(1,20)
-etas = [0.0001,0.0005,0.001]
+
+
+# gridsearch for batch size vs learning rate
+print('gridsearch for batch size vs learning rate')
+batch_sizes = np.arange(5,30)
+etas = [0.0001,0.0005,0.001, 0.005]
 mse = np.zeros((len(batch_sizes), len(etas)))
 best_mse = 1
 for i in range(len(batch_sizes)):
@@ -100,52 +86,30 @@ print('Lowest MSE: ', best_mse)
 mse_dataframe = pd.DataFrame(mse, index = batch_sizes, columns = etas)
 fig, ax = plt.subplots(figsize = (7, 7))
 sns.heatmap(mse_dataframe, annot=True, ax=ax, cmap="viridis_r", fmt='.4f')
-#ax.set_title("Grid search for optimal $\eta$ and $\gamma$")
-ax.set_xlabel("batch size")
-ax.set_ylabel("learning rate")
+ax.set_title("Grid search for batch size and learning rate")
+ax.set_xlabel("learning rate")
+ax.set_ylabel("batch_size")
 plt.show()
 
-"""
-plt.plot(batch_sizes, mse)
-plt.title("Finding the optimal batch size")
-plt.xlabel("batch size")
-plt.ylabel("MSE")
-plt.ylim(0,1)
-plt.legend()
-plt.show()
 
-# MSE as function of bach size with constant learning rate and epochs
-batch_sizes = [1,2,5,10,20,50]
-mse_regular = np.zeros(len(batch_sizes))
-best_mse = 1
-for i in range(len(batch_sizes)):
-    sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 100)
-    mse_regular[i] = sgdreg.stocastichGD_ols()
-    print(etas[i])
-    if mse_regular[i] < best_mse:
-        best_mse = mse_regular[i]
-print('Lowest MSE: ', best_mse)
-
-plt.plot(np.log10(etas), mse_regular, label=' Epochs: %i\n Batch size: %i' %(sgdreg.n_epochs, sgdreg.M))
-plt.title("Finding the optimal value for $\eta$")
-plt.xlabel("$log10(\eta)$")
-plt.ylabel("MSE")
-plt.ylim(0,1)
-plt.legend()
-plt.show()
 
 # SGD with learning learning schedule
-eta = 0.0025
-sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, 5, 2000)
-print(sgdreg.stocastichGD_ols())
+print('SGD with learning learning schedule')
+eta = 0.01
+epochs = 100
+M = 5
+sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, M, epochs)
+print(sgdreg.stocastichGD_ols(schedule=True))
+
 
 
 #SGD with momentum
-eta = 0.006
+print('SGD with momentum')
+eta = 0.0015
 epochs = 100
 M = 5
 
-sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, 5, 100)
+sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, 5, epochs)
 print(sgdreg.stocastichGD_ols('momentum', gamma=0.5))
 
 
@@ -164,8 +128,10 @@ plt.xlabel('$\gamma$')
 plt.ylabel('MSE')
 plt.show()
 
+
 # RMS-prop
-eta = 0.01
+print('SGD with RMS-prop')
+eta = 0.1
 epochs = 100
 M = 5
 
@@ -173,6 +139,7 @@ sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, M, epochs)
 print(sgdreg.stocastichGD_ols('rmsprop', beta=0.9))
 
 # regular SGD ridge gridsearch
+print('Regular SGD ridge gridsearch')
 epochs = 100
 M = 5
 lambdas = np.logspace(-8,0,9)
@@ -195,5 +162,34 @@ sns.heatmap(mse_dataframe, annot=True, ax=ax, cmap="viridis_r", fmt='.4f')
 ax.set_title("Grid search for optimal $\eta$ and $\gamma$")
 ax.set_xlabel("$\eta$")
 ax.set_ylabel("$\lambda$")
+plt.show()
+
+print('MSE as function of epochs with different algorithms')
+epoch_nums = np.arange(100)
+batch_size = 5
+mse_normal = np.zeros(len(epoch_nums))
+mse_schedule = np.zeros(len(epoch_nums))
+mse_momentum = np.zeros(len(epoch_nums))
+mse_rmsprop = np.zeros(len(epoch_nums))
+
+for i in range(len(epoch_nums)):
+    sgdreg_normal = Sdg(X_train, X_test, z_train, z_test, 0.001, batch_size, epoch_nums[i])
+    sgdreg_schedule = Sdg(X_train, X_test, z_train, z_test, 0.01, batch_size, epoch_nums[i])
+    sgdreg_momentum = Sdg(X_train, X_test, z_train, z_test, 0.0015, batch_size, epoch_nums[i])
+    sgdreg_rmsprop = Sdg(X_train, X_test, z_train, z_test, 0.01, batch_size, epoch_nums[i])
+    mse_normal[i] = sgdreg_normal.stocastichGD_ols()
+    mse_schedule[i] = sgdreg_schedule.stocastichGD_ols(schedule=True)
+    mse_momentum[i] = sgdreg_momentum.stocastichGD_ols('momentum')
+    mse_rmsprop[i] = sgdreg_rmsprop.stocastichGD_ols('rmsprop')
+
+plt.plot(epoch_nums, mse_normal, label='Regular SGD')
+plt.plot(epoch_nums, mse_schedule, label='With schedule')
+plt.plot(epoch_nums, mse_momentum, label='With momentum')
+plt.plot(epoch_nums, mse_rmsprop, label='With RMS-prop')
+plt.title('MSE as function of the number of epochs with different algorithms')
+plt.xlabel('Number of epochs')
+plt.ylabel('MSE')
+plt.ylim(0,1)
+plt.legend()
 plt.show()
 """
