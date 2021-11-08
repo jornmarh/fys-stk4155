@@ -104,7 +104,7 @@ class Sdg:
             #print(mse_sgd_ols)
             return mse_sgd_ols
 
-    def stocastichGD_ridge(self, lmd, algo='normalsgd', beta=0.9, eps=1e-8, schedule=False):
+    def stocastichGD_ridge(self, lmd, algo='normalsgd', gamma=0.01, beta=0.9, eps=1e-8, schedule=False):
         np.random.seed(64)
         theta = np.random.randn(self.X_train.shape[1])
 
@@ -134,7 +134,7 @@ class Sdg:
                     for mini_batch in mini_batches:
                         xi,yi = mini_batch
                         g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
-                        v = self.alpha*v - self.eta*g
+                        v = gamma*v - self.eta*g
                         if schedule == True:
                             self.eta = self.schedule(1e-6, epoch)
                         theta = theta + v

@@ -43,9 +43,9 @@ print("Analytical result from OLS:", ols_regression(X_train,z_train))
 # MSE as function of epochs with different learning rates
 print('MSE as function of epochs with different learning rates')
 etas = [0.0001,0.0005,0.001,0.005]
-etas = [0.001,0.005]
-epoch_nums = np.arange(50)
-batch_size = 20
+#etas = [0.001,0.005]
+epoch_nums = np.arange(1,100,2)
+batch_size = 5
 mse = np.zeros((len(epoch_nums),len(etas)))
 print(mse.shape)
 
@@ -57,14 +57,18 @@ for i in range(len(epoch_nums)):
 
 plt.plot(epoch_nums, mse[:,0], label='$\eta$ = %.4f' %(etas[0]))
 plt.plot(epoch_nums, mse[:,1], label='$\eta$ = %.4f' %(etas[1]))
-#plt.plot(epoch_nums, mse[:,2], label='$\eta$ = %.3f' %(etas[2]))
-#plt.plot(epoch_nums, mse[:,3], label='$\eta$ = %.3f' %(etas[3]))
+plt.plot(epoch_nums, mse[:,2], label='$\eta$ = %.3f' %(etas[2]))
+plt.plot(epoch_nums, mse[:,3], label='$\eta$ = %.3f' %(etas[3]))
 plt.title('MSE as function of the number of epochs with different learning rates')
 plt.xlabel('Number of epochs')
 plt.ylabel('MSE')
 plt.ylim(0,1)
 plt.legend()
 plt.show()
+
+# For testing single values
+sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 10000)
+print(sgdreg.stocastichGD_ols())
 
 
 
@@ -96,7 +100,7 @@ plt.show()
 # SGD with learning learning schedule
 print('SGD with learning learning schedule')
 eta = 0.01
-epochs = 100
+epochs = 10000
 M = 5
 sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, M, epochs)
 print(sgdreg.stocastichGD_ols(schedule=True))
@@ -105,12 +109,12 @@ print(sgdreg.stocastichGD_ols(schedule=True))
 
 #SGD with momentum
 print('SGD with momentum')
-eta = 0.0015
+eta = 0.006
 epochs = 100
 M = 5
 
-sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, 5, epochs)
-print(sgdreg.stocastichGD_ols('momentum', gamma=0.5))
+sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, M, epochs)
+print(sgdreg.stocastichGD_ols('momentum', gamma=0.5, schedule=True))
 
 
 gamma = np.arange(0,0.9, 0.01) # momentum parameter, value between 0 and 1
@@ -143,12 +147,11 @@ print('Regular SGD ridge gridsearch')
 epochs = 100
 M = 5
 lambdas = np.logspace(-8,0,9)
-etas = np.logspace(-5,-2.3,5)
+etas = np.around(np.logspace(-5,-2.3,9),decimals=5)
 mse_gridsearch = np.zeros((len(lambdas), len(etas)))
 
 sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, M, epochs)
 sgdreg.stocastichGD_ridge(0)
-
 
 for i in range(len(lambdas)):
     for j in range(len(etas)):
@@ -158,11 +161,20 @@ for i in range(len(lambdas)):
 # Plot gridsearch
 mse_dataframe = pd.DataFrame(mse_gridsearch, index = lambdas, columns = etas)
 fig, ax = plt.subplots(figsize = (7, 7))
-sns.heatmap(mse_dataframe, annot=True, ax=ax, cmap="viridis_r", fmt='.4f')
+sns.heatmap(mse_dataframe, annot=True, ax=ax, cmap="viridis_r", fmt='.2f')
 ax.set_title("Grid search for optimal $\eta$ and $\gamma$")
 ax.set_xlabel("$\eta$")
 ax.set_ylabel("$\lambda$")
 plt.show()
+
+# SGD ridge learning schedule
+sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.0023, 5, 100)
+sgdreg.stocastichGD_ridge(1e-8, schedule=True)
+"""
+# SGD ridge momentum
+sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.0023, 5, 100)
+sgdreg.stocastichGD_ridge(1e-8, 'momentum',gamma=0.5)
+"""
 
 print('MSE as function of epochs with different algorithms')
 epoch_nums = np.arange(100)
