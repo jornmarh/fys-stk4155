@@ -170,11 +170,11 @@ plt.show()
 # SGD ridge learning schedule
 sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.0023, 5, 100)
 sgdreg.stocastichGD_ridge(1e-8, schedule=True)
-"""
+
 # SGD ridge momentum
 sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.0023, 5, 100)
 sgdreg.stocastichGD_ridge(1e-8, 'momentum',gamma=0.5)
-"""
+
 
 print('MSE as function of epochs with different algorithms')
 epoch_nums = np.arange(100)
@@ -205,3 +205,17 @@ plt.ylim(0,1)
 plt.legend()
 plt.show()
 """
+# Scikit
+sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=0, fit_intercept=False, max_iter=3000, \
+tol=0.001, shuffle=True, random_state=68, learning_rate='constant', eta0=0.002)
+sgd_scikit.fit(X_train, z_train)
+z_pred_scikit = sgd_scikit.predict(X_train)
+print(mean_squared_error(z_train, z_pred_scikit))
+
+epochs = [20,50,100,200,500,1000,2000,3000]
+for i in range(len(epochs)):
+    sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=0, fit_intercept=False, max_iter=epochs[i], \
+    tol=0.001, shuffle=True, random_state=68, learning_rate='constant', eta0=0.002)
+    sgd_scikit.fit(X_train, z_train)
+    z_pred_scikit = sgd_scikit.predict(X_train)
+    print(mean_squared_error(z_train, z_pred_scikit))
