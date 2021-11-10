@@ -97,20 +97,20 @@ class NN:
     def feed_forward_train(self): #Forward progation for training the model
         self.activations = []
         z_h = np.matmul(self.xi, self.weights[0]) + self.biases[0]
-        a_h = self.sigmoid(z_h); self.activations.append(a_h)
+        a_h = self.activation(z_h); self.activations.append(a_h)
         for layer in range(1, self.n_hidden_layers):
             z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
-            a_h = self.sigmoid(z_h); self.activations.append(a_h)
+            a_h = self.activation(z_h); self.activations.append(a_h)
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
         a_o = z_o; self.activations.append(a_o)
         return
 
     def feed_forward_predict(self, X): #Final feed forward of a given test set
         z_h = np.matmul(X, self.weights[0]) + self.biases[0]
-        a_h = self.sigmoid(z_h)
+        a_h = self.activation(z_h)
         for layer in range(1, self.n_hidden_layers):
             z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
-            a_h = self.sigmoid(z_h)
+            a_h = self.activation(z_h)
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
         return z_o
 
