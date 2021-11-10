@@ -4,6 +4,7 @@ from module1 import Sdg, Franke
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPRegressor
 
 
 class NN:
@@ -109,7 +110,7 @@ class NN:
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             return
 
-        delta_l =  self.activations[-1] - self.yi.reshape(-1,1)
+        delta_l = self.activations[-1] - self.yi.reshape(-1,1)
         grad(delta_l, -1)
         for layer in range(self.n_hidden_layers-1, 0, -1):
             delta_L = delta_l
@@ -127,19 +128,12 @@ class NN:
             mini_batches = self.create_miniBatches(self.X_train, self.t, M)
             for mini_batch in mini_batches:
                 self.xi, self.yi = mini_batch
-                print("")
-                print(self.xi)
-                print("")
-                print(self.yi)
-                print("")
                 self.feed_forward_train()
                 self.back_propagation()
 
     def predict(self, X, t): #Function for predicting a binary classification set
         y = self.feed_forward_predict(X);
-        #print(y)
         return mean_squared_error(t, y)
-
 
 def FrankeFunction(x,y):
 	term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
@@ -148,15 +142,13 @@ def FrankeFunction(x,y):
 	term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
 	return term1 + term2 + term3 + term4
 
-
 #Initilize data
 np.random.seed(64)
 N = 20
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
-xflat = np.ravel(xmesh)
-yflat = np.ravel(ymesh)
+xflat = np.ravel(xmesh); yflat = np.ravel(ymesh)
 
 z = (FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N))
 X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
@@ -168,9 +160,14 @@ X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
 
 # Defining the neural network
-n_hidden_neurons = 30
-n_hidden_layers = 2
+n_hidden_neurons = 10
+n_hidden_layers = 3
 
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons) #Create network
 network1.train(100, 5, 0.005, 0.0001) #Train
 score = network1.predict(X_test, z_test); print(score) #Evalute model
+
+clf = MLPRegressor(activation='logistic', solver='sgd', alpha=0.0001, batch_size=5, learning_rate_init=0.005, max_iter=100, random_state=0)
+clf.fit(X_train, z_train)
+p = clf.predict(X_test)
+print(mean_squared_error(z_test, p))
