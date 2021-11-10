@@ -12,7 +12,9 @@ class NN:
                 X_train,
                 targets,
                 n_hidden_layers,
-                n_hidden_neurons):
+                n_hidden_neurons,
+                activation,
+                initilize):
 
         self.X_train = X_train
         self.t = targets
@@ -22,33 +24,53 @@ class NN:
         self.n_hidden_layers = n_hidden_layers
         self.n_hidden_neurons = n_hidden_neurons
 
-        self.weights = self.createWeights()
-        self.biases = self.createBiases()
+        if(activation == "sigmoid"):
+            self.activation = self.sigmoid
+        elif(activation == "elu"):
+            self.activation = self.relu
+        elif(activation == "lrelu"):
+            self.activation = self.lrelu
 
-    def createWeights(self): #Function for creating weight-arrays for all layers
+        self.weights = self.createWeights(initilize)
+        self.biases = self.createBiases(initilize)
+
+
+    def createWeights(self, init): #Function for creating weight-arrays for all layers
         weights = []
-        I_w = np.random.randn(self.n_features, self.n_hidden_neurons)
-        weights.append(I_w)
-        for i in range(1, self.n_hidden_layers):
-            weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons))
-
-        O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs)
-        weights.append(O_w)
+        if (init == "normal"):
+            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)
+            weights.append(I_w)
+            for i in range(1, self.n_hidden_layers):
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons))
+            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs)
+            weights.append(O_w)
 
         return weights
 
-    def createBiases(self): #same for biases
+    def createBiases(self, inti): #same for biases
         biases = []
-        for i in range(0, self.n_hidden_layers):
-            biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
-
-        O_b = np.zeros(self.n_outputs)
-        biases.append(O_b)
+        if (init == "normal"):
+            for i in range(0, self.n_hidden_layers):
+                biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
+            O_b = np.zeros(self.n_outputs)
+            biases.append(O_b)
 
         return biases
 
     def sigmoid(self, x): #Activation function
         return 1/(1 + np.exp(-x))
+    def elu(self, x):
+        alpha = 1
+        if (x < 0):
+            return alpha*(np.exp(x) - 1)
+        else:
+            return x
+    def lRelu(self, x):
+        alpha = 0.01
+        if (x < 0):
+            return alpha*x
+        else:
+            return x
 
     def accuracy_score(self, Y_test, Y_pred): #Evaluation method
         return np.sum(Y_test == Y_pred) / len(Y_test)
@@ -160,10 +182,11 @@ X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
 
 # Defining the neural network
-n_hidden_neurons = 10
+n_hidden_neurons = 100
 n_hidden_layers = 3
+activation = "sigmoid"
 
-network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons) #Create network
+network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation) #Create network
 network1.train(100, 5, 0.005, 0.0001) #Train
 score = network1.predict(X_test, z_test); print(score) #Evalute model
 
