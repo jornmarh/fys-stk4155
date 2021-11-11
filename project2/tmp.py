@@ -113,9 +113,9 @@ class NN:
         data = np.hstack((X, y.reshape(-1, 1)))
         np.random.shuffle(data)
         m = data.shape[0] // M
-        i = 0
-        for i in range(m + 1):
+        for i in range(m):
             mini_batch = data[i * M:(i + 1)*M, :]
+            print(mini_batch)
             X_mini = mini_batch[:, :-1]
             Y_mini = mini_batch[:, -1]
             mini_batches.append((X_mini, Y_mini))
@@ -151,34 +151,29 @@ class NN:
             if (layer == 0):
                 gradient_weigths = np.matmul(self.xi.T, delta_l)
                 gradient_biases = np.sum(delta_l, axis=0)
-
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
-
+                #print(gradient_weigths)
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             else:
                 gradient_weigths = np.matmul(self.activations[layer-1].T, delta_l)
                 gradient_biases = np.sum(delta_l, axis=0)
-
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
-
+                #print(gradient_weigths)
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             return
 
         delta_l = self.activations[-1] - self.yi.reshape(-1, 1)
         grad(delta_l, -1)
-
         for layer in range(self.n_hidden_layers-1, 0, -1):
             delta_L = delta_l
             delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.prime(self.activations[layer])
             grad(delta_l, layer)
-
         delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.prime(self.activations[0])
         grad(delta_l0, 0)
-
         return
 
     # method for training the model, with SGD(Without learning schedule, or other)
@@ -210,11 +205,10 @@ X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.float64)
 yXOR = np.array([0, 1, 1, 0])
 
 # Defining the neural network
-n_hidden_neurons = 4
+n_hidden_neurons = 10
 n_hidden_layers = 1
 
-network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons,
-              "relu", "normal")  # Create network
+network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons, "relu", "normal")  # Create network
 network1.train(1, 4, 0.05, 0.0001) #Train
-score = network1.predict(X, yXOR)
+#score = network1.predict(X, yXOR)
 #print(score)  # Evalute model
