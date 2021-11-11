@@ -224,7 +224,7 @@ yXOR = np.array([0, 1, 1, 0])
 n_hidden_neurons = 4
 n_hidden_layers = 1
 
-network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons, "sigmoid", "normal")  # Create network
+network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")  # Create network
 network1.train(100, 1, 0.05, 0.0001) #Train
 score = network1.predict(X, yXOR)
 print(score)  # Evalute model
