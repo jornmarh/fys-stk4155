@@ -71,8 +71,8 @@ class NN:
     def createBiases(self):  # same for biases
         biases = []
         for i in range(0, self.n_hidden_layers):
-            biases.append(np.zeros(self.n_hidden_neurons) + 1)
-        O_b = np.zeros(self.n_outputs) + 1
+            biases.append(np.zeros(self.n_hidden_neurons) + 0.1)
+        O_b = np.zeros(self.n_outputs) + 0.1
         biases.append(O_b)
         return biases
 
@@ -244,22 +244,21 @@ X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
 
 # Defining the neural network
-n_hidden_neurons = 20
-n_hidden_layers = 3
-activation = "RELU"
-initilize = "Xavier"
+n_hidden_neurons = 40
+n_hidden_layers = 2
+activation = "leaky-RELU"
+initilize = "He"
 
 print("Own dnn")
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
-network1.train(1000, 2, 0.001, 0.00001) #Train
+network1.train(1000, 2, 0.001, 0.0000001) #Train
 yPredict = network1.predict(X_test)
 print(mean_squared_error(z_test.reshape(-1,1), yPredict))
 print(r2_score(z_test.reshape(-1,1), yPredict))
 
 print("Scikit dnn")
-clf = MLPRegressor(activation='relu', solver='sgd', alpha=0.00001, batch_size=2, learning_rate_init=0.001, random_state=0)
+clf = MLPRegressor(activation='relu', solver='sgd', alpha=0.00001, batch_size=2, learning_rate_init=0.001, max_iter=1000, random_state=0)
 clf.fit(X_train, z_train)
 zPredict = clf.predict(X_test)
-
 print(mean_squared_error(z_test, zPredict))
 print(r2_score(z_test, zPredict))
