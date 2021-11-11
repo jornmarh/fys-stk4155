@@ -56,7 +56,7 @@ class NN:
                 weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons)) * np.sqrt(1.0/(self.n_hidden_neurons))
             O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_hidden_neurons))
             weights.append(O_w)
-        elif(init == "He")
+        elif(init == "He"):
             I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(2.0/(self.n_features))
             weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
@@ -69,7 +69,7 @@ class NN:
 
         return weights
 
-    def createBiases(self, init):  # same for biases
+    def createBiases(self):  # same for biases
         biases = []
         for i in range(0, self.n_hidden_layers):
             biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
