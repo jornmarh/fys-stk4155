@@ -134,7 +134,6 @@ class NN:
         for layer in range(1, self.n_hidden_layers):
             z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
             a_h = self.activation(z_h)
-            print(self.weights[layer])
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
         return z_o
 
@@ -209,11 +208,11 @@ X_test = scaler_x.transform(X_test)
 # Defining the neural network
 n_hidden_neurons = 100
 n_hidden_layers = 3
-activation = "relu"
+activation = "sigmoid"
 initilize = "normal"
 
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
-#network1.train(100, 5, 0.005, 0.0001) #Train
+network1.train(100, 5, 0.005, 0.0001) #Train
 score = network1.predict(X_train, z_train); print(score) #Evalute model
 
 clf = MLPRegressor(activation='logistic', solver='sgd', alpha=0.0001, batch_size=5, learning_rate_init=0.005, max_iter=100, random_state=0)

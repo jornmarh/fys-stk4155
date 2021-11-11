@@ -107,7 +107,7 @@ class NN:
         for j in range(rows):
             for k in range(cols):
                 if (x[j][k] <= 0):
-                    x[j][k] = alpha*xi
+                    x[j][k] = alpha*x[j][k]
         return x
 
     def prime_lrelu(self, x):
