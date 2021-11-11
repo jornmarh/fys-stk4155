@@ -103,18 +103,22 @@ class NN:
 
     def lrelu(self, x):
         alpha = 0.01
-        for i in range(len(x)):
-            if (x[i] <= 0):
-                x[i] = alpha*xi
+        rows, cols = x.shape
+        for j in range(rows):
+            for k in range(cols):
+                if (x[j][k] <= 0):
+                    x[j][k] = alpha*xi
         return x
 
     def prime_lrelu(self, x):
         alpha = 0.01
-        for i in range(len(x)):
-            if (x[i] > 0):
-                x[i] = 1
-            elif (x[i] <= 0):
-                x[i] = alpha
+        rows, cols = x.shape
+        for j in range(rows):
+            for k in range(cols):
+                if (x[j][k] > 0):
+                    x[j][k] = 1
+                elif (x[j][k] <= 0):
+                    x[j][k] = alpha
         return x
 
     def accuracy_score(self, Y_test, Y_pred):  # Evaluation method
