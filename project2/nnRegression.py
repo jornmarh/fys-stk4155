@@ -26,10 +26,13 @@ class NN:
 
         if(activation == "sigmoid"):
             self.activation = self.sigmoid
-        elif(activation == "elu"):
+            self.prime = self.prime_sigmoid
+        elif(activation == "relu"):
             self.activation = self.relu
+            self.prime = self.prime_relu
         elif(activation == "lrelu"):
             self.activation = self.lrelu
+            self.prime = self.prime_lrelu
 
         self.weights = self.createWeights(initilize)
         self.biases = self.createBiases(initilize)
@@ -47,31 +50,52 @@ class NN:
 
         return weights
 
-    def createBiases(self, inti): #same for biases
+    def createBiases(self, init): #same for biases
         biases = []
         if (init == "normal"):
             for i in range(0, self.n_hidden_layers):
                 biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
-            O_b = np.zeros(self.n_outputs)
+            O_b = np.zeros(self.n_outputs) + 0.01
             biases.append(O_b)
 
         return biases
 
     def sigmoid(self, x): #Activation function
         return 1/(1 + np.exp(-x))
-    def elu(self, x):
-        alpha = 1
-        if (x < 0):
-            return alpha*(np.exp(x) - 1)
-        else:
-            return x
-    def lRelu(self, x):
-        alpha = 0.01
-        if (x < 0):
-            return alpha*x
-        else:
-            return x
 
+    def prime_sigmoid(self, a):
+        return a*(1-a)
+
+    def relu(self, x):
+        rows, cols = x.shape
+        for j in range(rows):
+            for k in range(cols):
+                if (x[j][k] < 0):
+                    x[j][k] = 0
+        return x
+    def prime_relu(self, x):
+        rows, cols = x.shape
+        for j in range(rows):
+            for k in range(cols):
+                if (x[j][k] > 0):
+                    x[j][k] = 1
+                elif (x[j][k] <= 0):
+                    x[j][k] = 0
+        return x
+    def lrelu(self, x):
+        alpha = 0.01
+        for i in range(len(x)):
+            if (x[i] <= 0):
+                x[i] = alpha*xi
+        return x
+    def prime_lrelu(self, x):
+        alpha = 0.01
+        for i in range(len(x)):
+            if (x[i] > 0):
+                x[i] = 1
+            elif (x[i] <= 0):
+                x[i] = alpha
+        return x
     def accuracy_score(self, Y_test, Y_pred): #Evaluation method
         return np.sum(Y_test == Y_pred) / len(Y_test)
 
@@ -81,7 +105,6 @@ class NN:
         np.random.shuffle(data)
         m = data.shape[0] // M
         i = 0
-
         for i in range(m + 1):
             mini_batch = data[i * M:(i + 1)*M, :]
             X_mini = mini_batch[:, :-1]
@@ -111,6 +134,7 @@ class NN:
         for layer in range(1, self.n_hidden_layers):
             z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
             a_h = self.activation(z_h)
+            print(self.weights[layer])
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
         return z_o
 
@@ -126,8 +150,10 @@ class NN:
             else :
                 gradient_weigths = np.matmul(self.activations[layer-1].T, delta_l)
                 gradient_biases = np.sum(delta_l, axis=0)
+
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
+
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             return
@@ -136,11 +162,10 @@ class NN:
         grad(delta_l, -1)
         for layer in range(self.n_hidden_layers-1, 0, -1):
             delta_L = delta_l
-            delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.activations[layer]*(1-self.activations[layer])
+            delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.prime(self.activations[layer])
             grad(delta_l, layer)
-        delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.activations[0]*(1-self.activations[0])
+        delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.prime(self.activations[0])
         grad(delta_l0,0)
-
         return
 
     def train(self, n_epochs, M, eta, _lambda): #method for training the model, with SGD(Without learning schedule, or other)
@@ -184,11 +209,12 @@ X_test = scaler_x.transform(X_test)
 # Defining the neural network
 n_hidden_neurons = 100
 n_hidden_layers = 3
-activation = "sigmoid"
+activation = "relu"
+initilize = "normal"
 
-network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation) #Create network
-network1.train(100, 5, 0.005, 0.0001) #Train
-score = network1.predict(X_test, z_test); print(score) #Evalute model
+network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
+#network1.train(100, 5, 0.005, 0.0001) #Train
+score = network1.predict(X_train, z_train); print(score) #Evalute model
 
 clf = MLPRegressor(activation='logistic', solver='sgd', alpha=0.0001, batch_size=5, learning_rate_init=0.005, max_iter=100, random_state=0)
 clf.fit(X_train, z_train)
