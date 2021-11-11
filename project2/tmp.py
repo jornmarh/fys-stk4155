@@ -53,14 +53,14 @@ class NN:
             I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(1.0/(self.n_features))
             weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
-                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons)) * np.sqrt(1.0/(self.n_hidden_neurons))
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(1.0/(self.n_hidden_neurons)))
             O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_hidden_neurons))
             weights.append(O_w)
         elif(init == "He"):
             I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(2.0/(self.n_features))
             weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
-                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons)) * np.sqrt(2.0/(self.n_hidden_neurons))
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(2.0/(self.n_hidden_neurons)))
             O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(2.0/(self.n_hidden_neurons))
             weights.append(O_w)
         else:
@@ -221,10 +221,10 @@ X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.float64)
 yXOR = np.array([0, 1, 1, 0])
 
 # Defining the neural network
-n_hidden_neurons = 4
-n_hidden_layers = 1
+n_hidden_neurons = 20
+n_hidden_layers = 4
 
-network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")  # Create network
-network1.train(100, 1, 0.05, 0.0001) #Train
+network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons, "RELU", "Xavier")  # Create network
+network1.train(200, 4, 0.05, 0.0001) #Train
 score = network1.predict(X, yXOR)
 print(score)  # Evalute model

@@ -153,5 +153,5 @@ n_hidden_layers = 2
 
 
 network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons) #Create network
-network1.train(1000, 18, 0.5, 0.0001) #Train
+network1.train(100, 4, 0.5, 0.0001) #Train
 score = network1.predict(X, yXOR); print(score) #Evalute model
