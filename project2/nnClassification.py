@@ -1,7 +1,3 @@
-"Test file"
-
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 from module1 import Sdg, Franke
@@ -9,6 +5,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPRegressor
+
 
 class NN:
     def __init__(self,
@@ -124,6 +121,9 @@ class NN:
                     x[j][k] = alpha
         return x
 
+    def accuracy_score(self, Y_test, Y_pred):  # Evaluation method
+        return np.sum(Y_test == Y_pred) / len(Y_test)
+
     # Method for creating minibatches for SGD
     def create_miniBatches(self, X, y, M):
         mini_batches = []
@@ -150,7 +150,7 @@ class NN:
             z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
             a_h = self.activation(z_h); self.activations.append(a_h)
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
-        a_o = z_o; self.activations.append(a_o)
+        a_o = self.sigmoid(z_o); self.activations.append(a_o)
         return
 
     def feed_forward_predict(self, X):  # Final feed forward of a given test set
@@ -160,7 +160,7 @@ class NN:
             z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
             a_h = self.activation(z_h)
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
-        return z_o
+        return self.sigmoid(z_o)
 
     def back_propagation(self):  # Back propagation algorithm
         def grad(delta_l, layer):
@@ -203,45 +203,28 @@ class NN:
                 self.feed_forward_train()
                 self.back_propagation()
 
-    def predict(self, X, t): #Function for predicting a binary classification set
-        y = self.feed_forward_predict(X);
-        return mean_squared_error(t, y)
+    def predict(self, X, t):  # Function for predicting a binary classification set
+        y = self.feed_forward_predict(X)
+        print(y)
+        for i in range(len(y)):
+            if y[i] < 0.5:
+                y[i] = 0
+            elif y[i] > 0.5:
+                y[i] = 1
+        return self.accuracy_score(t.reshape(-1, 1), y)
 
-def FrankeFunction(x,y):
-	term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
-	term2 = 0.75*np.exp(-((9*x+1)**2)/49.0 - 0.1*(9*y+1))
-	term3 = 0.5*np.exp(-(9*x-7)**2/4.0 - 0.25*((9*y-3)**2))
-	term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
-	return term1 + term2 + term3 + term4
 
-#Initilize data
-np.random.seed(64)
-N = 20
-x = np.sort(np.random.uniform(0, 1, N))
-y = np.sort(np.random.uniform(0, 1, N))
-xmesh, ymesh = np.meshgrid(x,y)
-xflat = np.ravel(xmesh); yflat = np.ravel(ymesh)
-
-z = (FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N))
-X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
-
-X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
-scaler = StandardScaler()  # Utilizing scikit's standardscaler
-scaler_x = scaler.fit(X_train)  # Scaling x-data
-X_train = scaler_x.transform(X_train)
-X_test = scaler_x.transform(X_test)
+# Initilize data
+np.random.seed(0)
+# Design matrix
+X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.float64)
+yXOR = np.array([0, 1, 1, 0])
 
 # Defining the neural network
-n_hidden_neurons = 100
-n_hidden_layers = 3
-activation = "Sigmoid"
-initilize = "Random"
+n_hidden_neurons = 20
+n_hidden_layers = 4
 
-network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
-network1.train(100, 5, 0.005, 0.0001) #Train
-score = network1.predict(X_train, z_train); print(score) #Evalute model
-
-clf = MLPRegressor(activation='logistic', solver='sgd', alpha=0.0001, batch_size=5, learning_rate_init=0.005, max_iter=100)
-clf.fit(X_train, z_train)
-p = clf.predict(X_test)
-print(mean_squared_error(z_test, p))
+network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")  # Create network
+network1.train(200, 4, 0.05, 0.0001) #Train
+score = network1.predict(X, yXOR)
+print(score)  # Evalute model

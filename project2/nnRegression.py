@@ -6,61 +6,77 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPRegressor
 
-
 class NN:
     def __init__(self,
-                X_train,
-                targets,
-                n_hidden_layers,
-                n_hidden_neurons,
-                activation,
-                initilize):
+                 X_train,
+                 targets,
+                 n_hidden_layers,
+                 n_hidden_neurons,
+                 activation,
+                 initilize):
 
         self.X_train = X_train
         self.t = targets
 
         self.n_inputs, self.n_features = self.X_train.shape
-        self.n_outputs = 1 #Binary classification case
+        self.n_outputs = 1  # Binary classification case
         self.n_hidden_layers = n_hidden_layers
         self.n_hidden_neurons = n_hidden_neurons
 
-        if(activation == "sigmoid"):
+        if(activation == "Sigmoid"):
             self.activation = self.sigmoid
             self.prime = self.prime_sigmoid
-        elif(activation == "relu"):
+        elif(activation == "RELU"):
             self.activation = self.relu
             self.prime = self.prime_relu
-        elif(activation == "lrelu"):
+        elif(activation == "leaky-RELU"):
             self.activation = self.lrelu
             self.prime = self.prime_lrelu
+        else:
+            print("Invalid activation function")
+            quit()
 
         self.weights = self.createWeights(initilize)
-        self.biases = self.createBiases(initilize)
+        self.biases = self.createBiases()
 
-
-    def createWeights(self, init): #Function for creating weight-arrays for all layers
+    def createWeights(self, init):  # Function for creating weight-arrays for all layers
         weights = []
-        if (init == "normal"):
+        if (init == "Random"):
             I_w = np.random.randn(self.n_features, self.n_hidden_neurons)
             weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
                 weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons))
             O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs)
             weights.append(O_w)
+        elif(init == "Xavier"):
+            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(1.0/(self.n_features))
+            weights.append(I_w)
+            for i in range(1, self.n_hidden_layers):
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(1.0/(self.n_hidden_neurons)))
+            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_hidden_neurons))
+            weights.append(O_w)
+        elif(init == "He"):
+            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(2.0/(self.n_features))
+            weights.append(I_w)
+            for i in range(1, self.n_hidden_layers):
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(2.0/(self.n_hidden_neurons)))
+            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(2.0/(self.n_hidden_neurons))
+            weights.append(O_w)
+        else:
+            print("Incorrect initilization")
+            quit()
 
         return weights
 
-    def createBiases(self, init): #same for biases
+    def createBiases(self):  # same for biases
         biases = []
-        if (init == "normal"):
-            for i in range(0, self.n_hidden_layers):
-                biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
-            O_b = np.zeros(self.n_outputs) + 0.01
-            biases.append(O_b)
-
+        for i in range(0, self.n_hidden_layers):
+            biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
+        O_b = np.zeros(self.n_outputs) + 0.01
+        biases.append(O_b)
         return biases
 
-    def sigmoid(self, x): #Activation function
+    def sigmoid(self, x):  # Activation function
         return 1/(1 + np.exp(-x))
 
     def prime_sigmoid(self, a):
@@ -73,6 +89,7 @@ class NN:
                 if (x[j][k] < 0):
                     x[j][k] = 0
         return x
+
     def prime_relu(self, x):
         rows, cols = x.shape
         for j in range(rows):
@@ -82,30 +99,34 @@ class NN:
                 elif (x[j][k] <= 0):
                     x[j][k] = 0
         return x
+
     def lrelu(self, x):
         alpha = 0.01
-        for i in range(len(x)):
-            if (x[i] <= 0):
-                x[i] = alpha*xi
+        rows, cols = x.shape
+        for j in range(rows):
+            for k in range(cols):
+                if (x[j][k] <= 0):
+                    x[j][k] = alpha*x[j][k]
         return x
+
     def prime_lrelu(self, x):
         alpha = 0.01
-        for i in range(len(x)):
-            if (x[i] > 0):
-                x[i] = 1
-            elif (x[i] <= 0):
-                x[i] = alpha
+        rows, cols = x.shape
+        for j in range(rows):
+            for k in range(cols):
+                if (x[j][k] > 0):
+                    x[j][k] = 1
+                elif (x[j][k] <= 0):
+                    x[j][k] = alpha
         return x
-    def accuracy_score(self, Y_test, Y_pred): #Evaluation method
-        return np.sum(Y_test == Y_pred) / len(Y_test)
 
-    def create_miniBatches(self, X, y, M): #Method for creating minibatches for SGD
+    # Method for creating minibatches for SGD
+    def create_miniBatches(self, X, y, M):
         mini_batches = []
-        data = np.hstack((X, y.reshape(-1,1)))
+        data = np.hstack((X, y.reshape(-1, 1)))
         np.random.shuffle(data)
         m = data.shape[0] // M
-        i = 0
-        for i in range(m + 1):
+        for i in range(m):
             mini_batch = data[i * M:(i + 1)*M, :]
             X_mini = mini_batch[:, :-1]
             Y_mini = mini_batch[:, -1]
@@ -117,7 +138,7 @@ class NN:
             mini_batches.append((X_mini, Y_mini))
         return mini_batches
 
-    def feed_forward_train(self): #Forward progation for training the model
+    def feed_forward_train(self):  # Forward progation for training the model
         self.activations = []
         z_h = np.matmul(self.xi, self.weights[0]) + self.biases[0]
         a_h = self.activation(z_h); self.activations.append(a_h)
@@ -128,7 +149,7 @@ class NN:
         a_o = z_o; self.activations.append(a_o)
         return
 
-    def feed_forward_predict(self, X): #Final feed forward of a given test set
+    def feed_forward_predict(self, X):  # Final feed forward of a given test set
         z_h = np.matmul(X, self.weights[0]) + self.biases[0]
         a_h = self.activation(z_h)
         for layer in range(1, self.n_hidden_layers):
@@ -137,37 +158,38 @@ class NN:
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
         return z_o
 
-    def back_propagation(self): #Back propagation algorithm
+    def back_propagation(self):  # Back propagation algorithm
         def grad(delta_l, layer):
             if (layer == 0):
                 gradient_weigths = np.matmul(self.xi.T, delta_l)
                 gradient_biases = np.sum(delta_l, axis=0)
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
+                #print(gradient_weigths)
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
-            else :
+            else:
                 gradient_weigths = np.matmul(self.activations[layer-1].T, delta_l)
                 gradient_biases = np.sum(delta_l, axis=0)
-
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
-
+                #print(gradient_weigths)
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             return
 
-        delta_l = self.activations[-1] - self.yi.reshape(-1,1)
+        delta_l = self.activations[-1] - self.yi.reshape(-1, 1)
         grad(delta_l, -1)
         for layer in range(self.n_hidden_layers-1, 0, -1):
             delta_L = delta_l
             delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.prime(self.activations[layer])
             grad(delta_l, layer)
         delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.prime(self.activations[0])
-        grad(delta_l0,0)
+        grad(delta_l0, 0)
         return
 
-    def train(self, n_epochs, M, eta, _lambda): #method for training the model, with SGD(Without learning schedule, or other)
+    # method for training the model, with SGD(Without learning schedule, or other)
+    def train(self, n_epochs, M, eta, _lambda):
         self.eta = eta
         self.lmd = _lambda
         for epoch in range(n_epochs):
@@ -207,15 +229,15 @@ X_test = scaler_x.transform(X_test)
 
 # Defining the neural network
 n_hidden_neurons = 100
-n_hidden_layers = 3
-activation = "sigmoid"
-initilize = "normal"
+n_hidden_layers = 1
+activation = "leaky- RELU"
+initilize = "Xavier"
 
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
-network1.train(100, 5, 0.005, 0.0001) #Train
+network1.train(200, 5, 0.001, 0.0001) #Train
 score = network1.predict(X_train, z_train); print(score) #Evalute model
 
-clf = MLPRegressor(activation='logistic', solver='sgd', alpha=0.0001, batch_size=5, learning_rate_init=0.005, max_iter=100, random_state=0)
+clf = MLPRegressor(activation='relu', solver='sgd', alpha=0.0001, batch_size=5, learning_rate_init=0.001, max_iter=200)
 clf.fit(X_train, z_train)
 p = clf.predict(X_test)
 print(mean_squared_error(z_test, p))
