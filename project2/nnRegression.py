@@ -230,7 +230,7 @@ X_test = scaler_x.transform(X_test)
 # Defining the neural network
 n_hidden_neurons = 100
 n_hidden_layers = 1
-activation = "leaky- RELU"
+activation = "RELU"
 initilize = "Xavier"
 
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
