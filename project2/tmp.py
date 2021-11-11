@@ -53,7 +53,8 @@ xmesh, ymesh = np.meshgrid(x,y)
 xflat = np.ravel(xmesh); yflat = np.ravel(ymesh)
 
 z = (FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N))
-X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
+#X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
+X = create_X(xflat, yflat, 6)
 
 X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
 scaler = StandardScaler()  # Utilizing scikit's standardscaler
@@ -63,3 +64,4 @@ X_test = scaler_x.transform(X_test)
 model = LinearRegression().fit(X_train, z_train)
 ytilde = model.predict(X_test)
 print(mean_squared_error(z_test, ytilde))
+print(r2_score(z_test, ytilde))

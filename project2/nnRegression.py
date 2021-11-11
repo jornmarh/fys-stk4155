@@ -71,8 +71,8 @@ class NN:
     def createBiases(self):  # same for biases
         biases = []
         for i in range(0, self.n_hidden_layers):
-            biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
-        O_b = np.zeros(self.n_outputs) + 0.01
+            biases.append(np.zeros(self.n_hidden_neurons) + 1)
+        O_b = np.zeros(self.n_outputs) + 1
         biases.append(O_b)
         return biases
 
@@ -126,6 +126,7 @@ class NN:
         data = np.hstack((X, y.reshape(-1, 1)))
         np.random.shuffle(data)
         m = data.shape[0] // M
+        i=0
         for i in range(m):
             mini_batch = data[i * M:(i + 1)*M, :]
             X_mini = mini_batch[:, :-1]
@@ -199,9 +200,9 @@ class NN:
                 self.feed_forward_train()
                 self.back_propagation()
 
-    def predict(self, X, t): #Function for predicting a binary classification set
+    def predict(self, X): #Function for predicting a binary classification set
         y = self.feed_forward_predict(X);
-        return mean_squared_error(t, y)
+        return y
 
 def FrankeFunction(x,y):
 	term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
@@ -209,6 +210,21 @@ def FrankeFunction(x,y):
 	term3 = 0.5*np.exp(-(9*x-7)**2/4.0 - 0.25*((9*y-3)**2))
 	term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
 	return term1 + term2 + term3 + term4
+
+def create_X(x, y, n):
+    if len(x.shape) > 1:
+        x = np.ravel(x)
+        y = np.ravel(y)
+
+    N = len(x)
+    l = int((n+1)*(n+2)/2)        # Number of elements in beta
+    X = np.ones((N, l))
+
+    for i in range(1, n+1):
+        q = int((i)*(i+1)/2)
+        for k in range(i+1):
+            X[:, q+k] = (x**(i-k))*(y**k)
+    return X
 
 #Initilize data
 np.random.seed(64)
@@ -220,7 +236,7 @@ xflat = np.ravel(xmesh); yflat = np.ravel(ymesh)
 
 z = (FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N))
 X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
-
+#X = create_X(xflat, yflat, 6)
 X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
 scaler = StandardScaler()  # Utilizing scikit's standardscaler
 scaler_x = scaler.fit(X_train)  # Scaling x-data
@@ -228,16 +244,22 @@ X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
 
 # Defining the neural network
-n_hidden_neurons = 100
-n_hidden_layers = 1
+n_hidden_neurons = 20
+n_hidden_layers = 3
 activation = "RELU"
 initilize = "Xavier"
 
+print("Own dnn")
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
-network1.train(200, 5, 0.001, 0.0001) #Train
-score = network1.predict(X_train, z_train); print(score) #Evalute model
+network1.train(1000, 2, 0.001, 0.00001) #Train
+yPredict = network1.predict(X_test)
+print(mean_squared_error(z_test.reshape(-1,1), yPredict))
+print(r2_score(z_test.reshape(-1,1), yPredict))
 
-clf = MLPRegressor(activation='relu', solver='sgd', alpha=0.0001, batch_size=5, learning_rate_init=0.001, max_iter=200)
+print("Scikit dnn")
+clf = MLPRegressor(activation='relu', solver='sgd', alpha=0.00001, batch_size=2, learning_rate_init=0.001, random_state=0)
 clf.fit(X_train, z_train)
-p = clf.predict(X_test)
-print(mean_squared_error(z_test, p))
+zPredict = clf.predict(X_test)
+
+print(mean_squared_error(z_test, zPredict))
+print(r2_score(z_test, zPredict))
