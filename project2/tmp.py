@@ -24,44 +24,57 @@ class NN:
         self.n_hidden_layers = n_hidden_layers
         self.n_hidden_neurons = n_hidden_neurons
 
-        if(activation == "sigmoid"):
+        if(activation == "Sigmoid"):
             self.activation = self.sigmoid
             self.prime = self.prime_sigmoid
-        elif(activation == "relu"):
+        elif(activation == "RELU"):
             self.activation = self.relu
             self.prime = self.prime_relu
-        elif(activation == "lrelu"):
+        elif(activation == "leaky-RELU"):
             self.activation = self.lrelu
             self.prime = self.prime_lrelu
+        else:
+            print("Invalid activation function")
+            quit()
 
         self.weights = self.createWeights(initilize)
-        self.biases = self.createBiases(initilize)
-
-        #for i in range(len(self.biases)):
-        #    print(self.weights[i])
-
+        self.biases = self.createBiases()
 
     def createWeights(self, init):  # Function for creating weight-arrays for all layers
         weights = []
-        if (init == "normal"):
+        if (init == "Random"):
             I_w = np.random.randn(self.n_features, self.n_hidden_neurons)
             weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
-                weights.append(np.random.randn(
-                    self.n_hidden_neurons, self.n_hidden_neurons))
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons))
             O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs)
             weights.append(O_w)
+        elif(init == "Xavier"):
+            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(1.0/(self.n_features))
+            weights.append(I_w)
+            for i in range(1, self.n_hidden_layers):
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons)) * np.sqrt(1.0/(self.n_hidden_neurons))
+            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_hidden_neurons))
+            weights.append(O_w)
+        elif(init == "He")
+            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(2.0/(self.n_features))
+            weights.append(I_w)
+            for i in range(1, self.n_hidden_layers):
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons)) * np.sqrt(2.0/(self.n_hidden_neurons))
+            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(2.0/(self.n_hidden_neurons))
+            weights.append(O_w)
+        else:
+            print("Incorrect initilization")
+            quit()
 
         return weights
 
     def createBiases(self, init):  # same for biases
         biases = []
-        if (init == "normal"):
-            for i in range(0, self.n_hidden_layers):
-                biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
-            O_b = np.zeros(self.n_outputs) + 0.01
-            biases.append(O_b)
-
+        for i in range(0, self.n_hidden_layers):
+            biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
+        O_b = np.zeros(self.n_outputs) + 0.01
+        biases.append(O_b)
         return biases
 
     def sigmoid(self, x):  # Activation function
@@ -115,7 +128,6 @@ class NN:
         m = data.shape[0] // M
         for i in range(m):
             mini_batch = data[i * M:(i + 1)*M, :]
-            print(mini_batch)
             X_mini = mini_batch[:, :-1]
             Y_mini = mini_batch[:, -1]
             mini_batches.append((X_mini, Y_mini))
@@ -189,7 +201,7 @@ class NN:
 
     def predict(self, X, t):  # Function for predicting a binary classification set
         y = self.feed_forward_predict(X)
-        #print(y)
+        print(y)
         for i in range(len(y)):
             if y[i] < 0.5:
                 y[i] = 0
@@ -205,10 +217,10 @@ X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.float64)
 yXOR = np.array([0, 1, 1, 0])
 
 # Defining the neural network
-n_hidden_neurons = 10
+n_hidden_neurons = 4
 n_hidden_layers = 1
 
-network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons, "relu", "normal")  # Create network
-network1.train(1, 4, 0.05, 0.0001) #Train
-#score = network1.predict(X, yXOR)
-#print(score)  # Evalute model
+network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons, "sigmoid", "normal")  # Create network
+network1.train(100, 1, 0.05, 0.0001) #Train
+score = network1.predict(X, yXOR)
+print(score)  # Evalute model
