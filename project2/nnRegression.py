@@ -149,7 +149,7 @@ class NN:
         return z_o
 
     def back_propagation(self):  # Back propagation algorithm
-        def grad(delta_l, layer):
+        def update(delta_l, layer):
             if (layer == 0):
                 gradient_weigths = np.matmul(self.xi.T, delta_l)
                 gradient_biases = np.sum(delta_l, axis=0)
@@ -169,13 +169,13 @@ class NN:
             return
 
         delta_l = self.activations[-1] - self.yi.reshape(-1, 1)
-        grad(delta_l, -1)
+        update(delta_l, -1)
         for layer in range(self.n_hidden_layers-1, 0, -1):
             delta_L = delta_l
             delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.prime(self.zs[layer])
-            grad(delta_l, layer)
+            update(delta_l, layer)
         delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.prime(self.zs[0])
-        grad(delta_l0, 0)
+        update(delta_l0, 0)
         return
 
     # method for training the model, with SGD(Without learning schedule, or other)
