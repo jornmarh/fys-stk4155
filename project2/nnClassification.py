@@ -4,8 +4,8 @@ from module1 import Sdg, Franke
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.neural_network import MLPRegressor
-
+from sklearn.neural_network import MLPClassifier
+from sklearn.datasets import load_breast_cancer
 
 class NN:
     def __init__(self,
@@ -72,12 +72,13 @@ class NN:
     def createBiases(self):  # same for biases
         biases = []
         for i in range(0, self.n_hidden_layers):
-            biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
-        O_b = np.zeros(self.n_outputs) + 0.01
+            biases.append(np.zeros(self.n_hidden_neurons) + 0.1)
+        O_b = np.zeros(self.n_outputs) + 0.1
         biases.append(O_b)
         return biases
 
     def sigmoid(self, x):  # Activation function
+        print("sigmoid")
         return 1/(1 + np.exp(-x))
 
     def prime_sigmoid(self, a):
@@ -130,6 +131,7 @@ class NN:
         data = np.hstack((X, y.reshape(-1, 1)))
         np.random.shuffle(data)
         m = data.shape[0] // M
+        i = 0
         for i in range(m):
             mini_batch = data[i * M:(i + 1)*M, :]
             X_mini = mini_batch[:, :-1]
@@ -144,12 +146,13 @@ class NN:
 
     def feed_forward_train(self):  # Forward progation for training the model
         self.activations = []
-        z_h = np.matmul(self.xi, self.weights[0]) + self.biases[0]
+        self.zs = []
+        z_h = np.matmul(self.xi, self.weights[0]) + self.biases[0]; self.zs.append(z_h)
         a_h = self.activation(z_h); self.activations.append(a_h)
         for layer in range(1, self.n_hidden_layers):
-            z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
+            z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]; self.zs.append(z_h)
             a_h = self.activation(z_h); self.activations.append(a_h)
-        z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
+        z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]; self.zs.append(z_o)
         a_o = self.sigmoid(z_o); self.activations.append(a_o)
         return
 
@@ -186,9 +189,9 @@ class NN:
         grad(delta_l, -1)
         for layer in range(self.n_hidden_layers-1, 0, -1):
             delta_L = delta_l
-            delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.prime(self.activations[layer])
+            delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.prime(self.zs[layer])
             grad(delta_l, layer)
-        delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.prime(self.activations[0])
+        delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.prime(self.zs[0])
         grad(delta_l0, 0)
         return
 
@@ -205,7 +208,6 @@ class NN:
 
     def predict(self, X, t):  # Function for predicting a binary classification set
         y = self.feed_forward_predict(X)
-        print(y)
         for i in range(len(y)):
             if y[i] < 0.5:
                 y[i] = 0
@@ -216,15 +218,32 @@ class NN:
 
 # Initilize data
 np.random.seed(0)
-# Design matrix
-X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.float64)
-yXOR = np.array([0, 1, 1, 0])
+
+
+inputs = load_breast_cancer()
+X = inputs.data
+y = inputs.target
+
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=0.2)
+#scaler = StandardScaler()  # Utilizing scikit's standardscaler
+#scaler_x = scaler.fit(X_train)  # Scaling x-data
+#X_train = scaler_x.transform(X_train)
+#X_test = scaler_x.transform(X_test)
+
+print(np.amin(X_train))
 
 # Defining the neural network
-n_hidden_neurons = 20
-n_hidden_layers = 4
+n_hidden_neurons = 10
+n_hidden_layers = 1
 
-network1 = NN(X, yXOR, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")  # Create network
-network1.train(200, 4, 0.05, 0.0001) #Train
-score = network1.predict(X, yXOR)
-print(score)  # Evalute model
+network1 = NN(X_train, y_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")  # Create network
+network1.train(1, X_train.shape[0], 0.01, 0.0001) #Train
+#score = network1.predict(X_test, y_test)
+#print(score)  # Evalute model
+
+"""
+clf = MLPClassifier(activation="logistic", solver="sgd", alpha=0.0001, batch_size=2, learning_rate_init=0.01, max_iter=100)
+clf.fit(X_train, y_train)
+ytilde = clf.predict(X_test)
+print(clf.score(X_test, y_test))
+"""

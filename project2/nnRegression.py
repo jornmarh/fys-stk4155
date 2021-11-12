@@ -49,11 +49,11 @@ class NN:
             O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs)
             weights.append(O_w)
         elif(init == "Xavier"):
-            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(1.0/(self.n_features))
+            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(1.0/(self.n_inputs))
             weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
-                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(1.0/(self.n_hidden_neurons)))
-            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_hidden_neurons))
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(1.0/(self.n_inputs)))
+            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_inputs))
             weights.append(O_w)
         elif(init == "He"):
             I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(2.0/(self.n_features))
@@ -71,53 +71,53 @@ class NN:
     def createBiases(self):  # same for biases
         biases = []
         for i in range(0, self.n_hidden_layers):
-            biases.append(np.zeros(self.n_hidden_neurons) + 0.1)
-        O_b = np.zeros(self.n_outputs) + 0.1
+            biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
+        O_b = np.zeros(self.n_outputs) + 0.01
         biases.append(O_b)
         return biases
 
     def sigmoid(self, x):  # Activation function
-        return 1/(1 + np.exp(-x))
+        return 1.0/(1.0 + np.exp(-x))
 
-    def prime_sigmoid(self, a):
-        return a*(1-a)
+    def prime_sigmoid(self, x):
+        return self.sigmoid(x)*(1.0-self.sigmoid(x))
 
     def relu(self, x):
-        rows, cols = x.shape
-        for j in range(rows):
-            for k in range(cols):
-                if (x[j][k] < 0):
-                    x[j][k] = 0
+        data, nodes = x.shape
+        for n in range(nodes):
+            for i in range(data):
+                if (x[i][n] < 0):
+                    x[i][n] = 0.0
         return x
 
     def prime_relu(self, x):
-        rows, cols = x.shape
-        for j in range(rows):
-            for k in range(cols):
-                if (x[j][k] > 0):
-                    x[j][k] = 1
-                elif (x[j][k] <= 0):
-                    x[j][k] = 0
+        data, nodes = x.shape
+        for n in range(nodes):
+            for i in range(data):
+                if (x[i][n] > 0):
+                    x[i][n] = 1.0
+                elif (x[i][n] <= 0):
+                    x[i][n] = 0.0
         return x
 
     def lrelu(self, x):
         alpha = 0.01
-        rows, cols = x.shape
-        for j in range(rows):
-            for k in range(cols):
-                if (x[j][k] <= 0):
-                    x[j][k] = alpha*x[j][k]
+        data, nodes = x.shape
+        for n in range(nodes):
+            for i in range(data):
+                if (x[i][n] <= 0):
+                    x[i][n] = alpha*x[i][n]
         return x
 
     def prime_lrelu(self, x):
         alpha = 0.01
-        rows, cols = x.shape
-        for j in range(rows):
-            for k in range(cols):
-                if (x[j][k] > 0):
-                    x[j][k] = 1
-                elif (x[j][k] <= 0):
-                    x[j][k] = alpha
+        data, nodes = x.shape
+        for n in range(nodes):
+            for i in range(data):
+                if (x[i][n] > 0):
+                    x[i][n] = 1.0
+                elif (x[i][n] <= 0):
+                    x[i][n] = alpha
         return x
 
     # Method for creating minibatches for SGD
@@ -141,12 +141,13 @@ class NN:
 
     def feed_forward_train(self):  # Forward progation for training the model
         self.activations = []
-        z_h = np.matmul(self.xi, self.weights[0]) + self.biases[0]
+        self.zs = []
+        z_h = np.matmul(self.xi, self.weights[0]) + self.biases[0]; self.zs.append(z_h)
         a_h = self.activation(z_h); self.activations.append(a_h)
         for layer in range(1, self.n_hidden_layers):
-            z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]
+            z_h = np.matmul(a_h, self.weights[layer]) + self.biases[layer]; self.zs.append(z_h)
             a_h = self.activation(z_h); self.activations.append(a_h)
-        z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]
+        z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]; self.zs.append(z_o)
         a_o = z_o; self.activations.append(a_o)
         return
 
@@ -183,9 +184,9 @@ class NN:
         grad(delta_l, -1)
         for layer in range(self.n_hidden_layers-1, 0, -1):
             delta_L = delta_l
-            delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.prime(self.activations[layer])
+            delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.prime(self.zs[layer])
             grad(delta_l, layer)
-        delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.prime(self.activations[0])
+        delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.prime(self.zs[0])
         grad(delta_l0, 0)
         return
 
@@ -244,21 +245,24 @@ X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
 
 # Defining the neural network
-n_hidden_neurons = 40
-n_hidden_layers = 2
-activation = "leaky-RELU"
-initilize = "He"
+n_hidden_neurons = 100
+n_hidden_layers = 1
+activation = "Sigmoid"
+initilize = "Random"
 
 print("Own dnn")
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
-network1.train(1000, 2, 0.001, 0.0000001) #Train
+network1.train(100, 10, 0.001, 0.0000001) #Train
 yPredict = network1.predict(X_test)
+print("")
 print(mean_squared_error(z_test.reshape(-1,1), yPredict))
 print(r2_score(z_test.reshape(-1,1), yPredict))
 
+'''
 print("Scikit dnn")
-clf = MLPRegressor(activation='relu', solver='sgd', alpha=0.00001, batch_size=2, learning_rate_init=0.001, max_iter=1000, random_state=0)
+clf = MLPRegressor(activation='relu', solver='sgd', alpha=0.000001, batch_size=2, learning_rate_init=0.001, max_iter=1000, random_state=0)
 clf.fit(X_train, z_train)
 zPredict = clf.predict(X_test)
 print(mean_squared_error(z_test, zPredict))
 print(r2_score(z_test, zPredict))
+'''
