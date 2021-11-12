@@ -90,23 +90,17 @@ class NN:
 
     def lrelu(self, x):
         alpha = 0.01
-        data, nodes = x.shape
-        for n in range(nodes):
-            for i in range(data):
-                if (x[i][n] <= 0):
-                    x[i][n] = alpha*x[i][n]
-        return x
-
+        y1 = ((x >= 0) * x)
+        y2 = ((x < 0) * x * alpha)
+        y = y1 + y2
+        return y
+        
     def prime_lrelu(self, x):
         alpha = 0.01
-        data, nodes = x.shape
-        for n in range(nodes):
-            for i in range(data):
-                if (x[i][n] > 0):
-                    x[i][n] = 1.0
-                elif (x[i][n] <= 0):
-                    x[i][n] = alpha
-        return x
+        dy1 =((x >= 0) * 1)
+        dy2 = ((x < 0) * alpha)
+        dy = dy1 + dy2
+        return dy
 
     # Method for creating minibatches for SGD
     def create_miniBatches(self, X, y, M):
@@ -155,7 +149,6 @@ class NN:
                 gradient_biases = np.sum(delta_l, axis=0)
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
-                #print(gradient_weigths)
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             else:
@@ -163,7 +156,6 @@ class NN:
                 gradient_biases = np.sum(delta_l, axis=0)
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
-                #print(gradient_weigths)
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             return
@@ -171,8 +163,7 @@ class NN:
         delta_l = self.activations[-1] - self.yi.reshape(-1, 1)
         update(delta_l, -1)
         for layer in range(self.n_hidden_layers-1, 0, -1):
-            delta_L = delta_l
-            delta_l = np.matmul(delta_L, self.weights[layer+1].T) * self.prime(self.zs[layer])
+            delta_l = np.matmul(delta_l, self.weights[layer+1].T) * self.prime(self.zs[layer])
             update(delta_l, layer)
         delta_l0 = np.matmul(delta_l, self.weights[1].T) * self.prime(self.zs[0])
         update(delta_l0, 0)
@@ -235,7 +226,7 @@ X_test = scaler_x.transform(X_test)
 # Defining the neural network
 n_hidden_neurons = 100
 n_hidden_layers = 1
-activation = "RELU"
+activation = "leaky-RELU"
 initilize = "He"
 
 print("Own dnn")
