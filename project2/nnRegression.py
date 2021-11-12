@@ -49,11 +49,11 @@ class NN:
             O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs)
             weights.append(O_w)
         elif(init == "Xavier"):
-            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(1.0/(self.n_inputs))
+            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(1.0/(self.n_features))
             weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
-                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(1.0/(self.n_inputs)))
-            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_inputs))
+                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(1.0/(self.n_hidden_neurons)))
+            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_hidden_neurons))
             weights.append(O_w)
         elif(init == "He"):
             I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(2.0/(self.n_features))
@@ -71,8 +71,8 @@ class NN:
     def createBiases(self):  # same for biases
         biases = []
         for i in range(0, self.n_hidden_layers):
-            biases.append(np.zeros(self.n_hidden_neurons) + 0.01)
-        O_b = np.zeros(self.n_outputs) + 0.01
+            biases.append(np.zeros(self.n_hidden_neurons))
+        O_b = np.zeros(self.n_outputs)
         biases.append(O_b)
         return biases
 
@@ -83,22 +83,10 @@ class NN:
         return self.sigmoid(x)*(1.0-self.sigmoid(x))
 
     def relu(self, x):
-        data, nodes = x.shape
-        for n in range(nodes):
-            for i in range(data):
-                if (x[i][n] < 0):
-                    x[i][n] = 0.0
-        return x
+        return x * (x > 0)
 
     def prime_relu(self, x):
-        data, nodes = x.shape
-        for n in range(nodes):
-            for i in range(data):
-                if (x[i][n] > 0):
-                    x[i][n] = 1.0
-                elif (x[i][n] <= 0):
-                    x[i][n] = 0.0
-        return x
+        return 1. * (x > 0)
 
     def lrelu(self, x):
         alpha = 0.01
@@ -247,8 +235,8 @@ X_test = scaler_x.transform(X_test)
 # Defining the neural network
 n_hidden_neurons = 100
 n_hidden_layers = 1
-activation = "Sigmoid"
-initilize = "Random"
+activation = "RELU"
+initilize = "He"
 
 print("Own dnn")
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
@@ -258,11 +246,9 @@ print("")
 print(mean_squared_error(z_test.reshape(-1,1), yPredict))
 print(r2_score(z_test.reshape(-1,1), yPredict))
 
-'''
 print("Scikit dnn")
-clf = MLPRegressor(activation='relu', solver='sgd', alpha=0.000001, batch_size=2, learning_rate_init=0.001, max_iter=1000, random_state=0)
+clf = MLPRegressor(activation='logistic', solver='sgd', alpha=0.000001, batch_size=10, learning_rate_init=0.001, max_iter=1000, random_state=0)
 clf.fit(X_train, z_train)
 zPredict = clf.predict(X_test)
 print(mean_squared_error(z_test, zPredict))
 print(r2_score(z_test, zPredict))
-'''
