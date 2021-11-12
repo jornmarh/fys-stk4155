@@ -32,6 +32,9 @@ class NN:
         elif(activation == "leaky-RELU"):
             self.activation = self.lrelu
             self.prime = self.prime_lrelu
+        elif(activation == "ELU"):
+            self.activation = self.elu
+            self.prime = self.prime_elu
         else:
             print("Invalid activation function")
             quit()
@@ -41,27 +44,22 @@ class NN:
 
     def createWeights(self, init):  # Function for creating weight-arrays for all layers
         weights = []
+
         if (init == "Random"):
-            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)
-            weights.append(I_w)
+            I_w = np.random.randn(self.n_features, self.n_hidden_neurons); weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
                 weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons))
-            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs)
-            weights.append(O_w)
+            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs); weights.append(O_w)
         elif(init == "Xavier"):
-            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(1.0/(self.n_features))
-            weights.append(I_w)
+            I_w = np.random.normal(0, np.sqrt(1.0/self.n_features), (self.n_features, self.n_hidden_neurons)); weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
-                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(1.0/(self.n_hidden_neurons)))
-            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_hidden_neurons))
-            weights.append(O_w)
+                weights.append(np.random.normal(0, np.sqrt(1.0/self.n_hidden_neurons), (self.n_hidden_neurons, self.n_hidden_neurons)))
+            O_w = np.random.normal(0, np.sqrt(1.0/self.n_hidden_neurons), (self.n_hidden_neurons, self.n_outputs)); weights.append(O_w)
         elif(init == "He"):
-            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(2.0/(self.n_features))
-            weights.append(I_w)
+            I_w = np.random.normal(0, np.sqrt(2.0/self.n_features), (self.n_features, self.n_hidden_neurons)); weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
-                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(2.0/(self.n_hidden_neurons)))
-            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(2.0/(self.n_hidden_neurons))
-            weights.append(O_w)
+                weights.append(np.random.normal(0, np.sqrt(2.0/self.n_hidden_neurons), (self.n_hidden_neurons, self.n_hidden_neurons)))
+            O_w = np.random.normal(0, np.sqrt(1.0/self.n_hidden_neurons), (self.n_hidden_neurons, self.n_outputs)); weights.append(O_w)
         else:
             print("Incorrect initilization")
             quit()
@@ -86,7 +84,7 @@ class NN:
         return x * (x > 0)
 
     def prime_relu(self, x):
-        return 1. * (x > 0)
+        return 1.0 * (x > 0)
 
     def lrelu(self, x):
         alpha = 0.01
@@ -94,13 +92,30 @@ class NN:
         y2 = ((x < 0) * x * alpha)
         y = y1 + y2
         return y
-        
+
     def prime_lrelu(self, x):
         alpha = 0.01
-        dy1 =((x >= 0) * 1)
+        dy1 =((x >= 0) * 1.0)
         dy2 = ((x < 0) * alpha)
         dy = dy1 + dy2
         return dy
+
+    def elu(self, x):
+        alpha = 1.0
+        coef = alpha*(np.exp(x)-1)
+        dy1 =((x < 0) * coef)
+        dy2 = ((x >= 0) * x)
+        dy = dy1 + dy2
+        return dy
+
+    def prime_elu(self, x):
+        alpha = 1.0
+        coef = alpha*(np.exp(x)-1.0)
+        dy1 =((x < 0) * np.exp(x))
+        dy2 = ((x >= 0) * 1.0)
+        dy = dy1 + dy2
+        return dy
+
 
     # Method for creating minibatches for SGD
     def create_miniBatches(self, X, y, M):
@@ -124,6 +139,7 @@ class NN:
     def feed_forward_train(self):  # Forward progation for training the model
         self.activations = []
         self.zs = []
+
         z_h = np.matmul(self.xi, self.weights[0]) + self.biases[0]; self.zs.append(z_h)
         a_h = self.activation(z_h); self.activations.append(a_h)
         for layer in range(1, self.n_hidden_layers):
@@ -131,6 +147,7 @@ class NN:
             a_h = self.activation(z_h); self.activations.append(a_h)
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]; self.zs.append(z_o)
         a_o = z_o; self.activations.append(a_o)
+
         return
 
     def feed_forward_predict(self, X):  # Final feed forward of a given test set
@@ -224,22 +241,21 @@ X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
 
 # Defining the neural network
-n_hidden_neurons = 100
-n_hidden_layers = 1
-activation = "leaky-RELU"
+n_hidden_neurons = 40
+n_hidden_layers = 2
+activation = "RELU"
 initilize = "He"
 
 print("Own dnn")
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
-network1.train(100, 10, 0.001, 0.0000001) #Train
+network1.train(1000, 2, 0.001, 0.0000001) #Train
 yPredict = network1.predict(X_test)
-print("")
 print(mean_squared_error(z_test.reshape(-1,1), yPredict))
 print(r2_score(z_test.reshape(-1,1), yPredict))
 
 print("Scikit dnn")
-clf = MLPRegressor(activation='logistic', solver='sgd', alpha=0.000001, batch_size=10, learning_rate_init=0.001, max_iter=1000, random_state=0)
-clf.fit(X_train, z_train)
-zPredict = clf.predict(X_test)
+dnn = MLPRegressor(activation='relu', solver='sgd', alpha=0.000001, batch_size=2, learning_rate_init=0.001, max_iter=1000, random_state=0)
+dnn.fit(X_train, z_train)
+zPredict = dnn.predict(X_test)
 print(mean_squared_error(z_test, zPredict))
 print(r2_score(z_test, zPredict))
