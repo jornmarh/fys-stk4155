@@ -42,27 +42,22 @@ class NN:
 
     def createWeights(self, init):  # Function for creating weight-arrays for all layers
         weights = []
+
         if (init == "Random"):
-            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)
-            weights.append(I_w)
+            I_w = np.random.randn(self.n_features, self.n_hidden_neurons); weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
                 weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons))
-            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs)
-            weights.append(O_w)
+            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs); weights.append(O_w)
         elif(init == "Xavier"):
-            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(1.0/(self.n_features))
-            weights.append(I_w)
+            I_w = np.random.normal(0, np.sqrt(1.0/self.n_features), (self.n_features, self.n_hidden_neurons)); weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
-                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(1.0/(self.n_hidden_neurons)))
-            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(1.0/(self.n_hidden_neurons))
-            weights.append(O_w)
+                weights.append(np.random.normal(0, np.sqrt(1.0/self.n_hidden_neurons), (self.n_hidden_neurons, self.n_hidden_neurons)))
+            O_w = np.random.normal(0, np.sqrt(1.0/self.n_hidden_neurons), (self.n_hidden_neurons, self.n_outputs)); weights.append(O_w)
         elif(init == "He"):
-            I_w = np.random.randn(self.n_features, self.n_hidden_neurons)*np.sqrt(2.0/(self.n_features))
-            weights.append(I_w)
+            I_w = np.random.normal(0, np.sqrt(2.0/self.n_features), (self.n_features, self.n_hidden_neurons)); weights.append(I_w)
             for i in range(1, self.n_hidden_layers):
-                weights.append(np.random.randn(self.n_hidden_neurons, self.n_hidden_neurons) * np.sqrt(2.0/(self.n_hidden_neurons)))
-            O_w = np.random.randn(self.n_hidden_neurons, self.n_outputs) * np.sqrt(2.0/(self.n_hidden_neurons))
-            weights.append(O_w)
+                weights.append(np.random.normal(0, np.sqrt(2.0/self.n_hidden_neurons), (self.n_hidden_neurons, self.n_hidden_neurons)))
+            O_w = np.random.normal(0, np.sqrt(1.0/self.n_hidden_neurons), (self.n_hidden_neurons, self.n_outputs)); weights.append(O_w)
         else:
             print("Incorrect initilization")
             quit()
@@ -72,58 +67,36 @@ class NN:
     def createBiases(self):  # same for biases
         biases = []
         for i in range(0, self.n_hidden_layers):
-            biases.append(np.zeros(self.n_hidden_neurons) + 0.1)
-        O_b = np.zeros(self.n_outputs) + 0.1
+            biases.append(np.zeros(self.n_hidden_neurons))
+        O_b = np.zeros(self.n_outputs)
         biases.append(O_b)
         return biases
 
     def sigmoid(self, x):  # Activation function
-        print("sigmoid")
-        return 1/(1 + np.exp(-x))
+        return 1.0/(1.0 + np.exp(-x))
 
-    def prime_sigmoid(self, a):
-        return a*(1-a)
+    def prime_sigmoid(self, x):
+        return self.sigmoid(x)*(1.0-self.sigmoid(x))
 
     def relu(self, x):
-        rows, cols = x.shape
-        for j in range(rows):
-            for k in range(cols):
-                if (x[j][k] < 0):
-                    x[j][k] = 0
-        return x
+        return x * (x > 0)
 
     def prime_relu(self, x):
-        rows, cols = x.shape
-        for j in range(rows):
-            for k in range(cols):
-                if (x[j][k] > 0):
-                    x[j][k] = 1
-                elif (x[j][k] <= 0):
-                    x[j][k] = 0
-        return x
+        return 1.0 * (x > 0)
 
     def lrelu(self, x):
         alpha = 0.01
-        rows, cols = x.shape
-        for j in range(rows):
-            for k in range(cols):
-                if (x[j][k] <= 0):
-                    x[j][k] = alpha*x[j][k]
-        return x
+        y1 = ((x >= 0) * x)
+        y2 = ((x < 0) * x * alpha)
+        y = y1 + y2
+        return y
 
     def prime_lrelu(self, x):
         alpha = 0.01
-        rows, cols = x.shape
-        for j in range(rows):
-            for k in range(cols):
-                if (x[j][k] > 0):
-                    x[j][k] = 1
-                elif (x[j][k] <= 0):
-                    x[j][k] = alpha
-        return x
-
-    def accuracy_score(self, Y_test, Y_pred):  # Evaluation method
-        return np.sum(Y_test == Y_pred) / len(Y_test)
+        dy1 =((x >= 0) * 1.0)
+        dy2 = ((x < 0) * alpha)
+        dy = dy1 + dy2
+        return dy
 
     # Method for creating minibatches for SGD
     def create_miniBatches(self, X, y, M):
@@ -131,7 +104,7 @@ class NN:
         data = np.hstack((X, y.reshape(-1, 1)))
         np.random.shuffle(data)
         m = data.shape[0] // M
-        i = 0
+        i=0
         for i in range(m):
             mini_batch = data[i * M:(i + 1)*M, :]
             X_mini = mini_batch[:, :-1]
@@ -147,6 +120,7 @@ class NN:
     def feed_forward_train(self):  # Forward progation for training the model
         self.activations = []
         self.zs = []
+
         z_h = np.matmul(self.xi, self.weights[0]) + self.biases[0]; self.zs.append(z_h)
         a_h = self.activation(z_h); self.activations.append(a_h)
         for layer in range(1, self.n_hidden_layers):
@@ -154,6 +128,7 @@ class NN:
             a_h = self.activation(z_h); self.activations.append(a_h)
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]; self.zs.append(z_o)
         a_o = self.sigmoid(z_o); self.activations.append(a_o)
+
         return
 
     def feed_forward_predict(self, X):  # Final feed forward of a given test set
@@ -206,44 +181,45 @@ class NN:
                 self.feed_forward_train()
                 self.back_propagation()
 
-    def predict(self, X, t):  # Function for predicting a binary classification set
+    def predict(self, X):  # Function for predicting a binary classification set
         y = self.feed_forward_predict(X)
         for i in range(len(y)):
             if y[i] < 0.5:
-                y[i] = 0
+                y[i] = int(0)
             elif y[i] > 0.5:
-                y[i] = 1
-        return self.accuracy_score(t.reshape(-1, 1), y)
+                y[i] = int(1)
+        return y.ravel()
 
+def accuracy_score(test, pred):  # Evaluation method
+    return np.sum(test == pred) / len(test)
 
 # Initilize data
-np.random.seed(0)
+np.random.seed(64)
 
+cancer_data = load_breast_cancer()
+X = cancer_data.data
+t = cancer_data.target
 
-inputs = load_breast_cancer()
-X = inputs.data
-y = inputs.target
-
-X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=0.2)
+X_train, X_test, t_train, t_test = train_test_split(X,t, test_size=0.1)
 #scaler = StandardScaler()  # Utilizing scikit's standardscaler
 #scaler_x = scaler.fit(X_train)  # Scaling x-data
 #X_train = scaler_x.transform(X_train)
 #X_test = scaler_x.transform(X_test)
 
-print(np.amin(X_train))
-
 # Defining the neural network
-n_hidden_neurons = 10
+n_hidden_neurons = 100
 n_hidden_layers = 1
 
-network1 = NN(X_train, y_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")  # Create network
-network1.train(1, X_train.shape[0], 0.01, 0.0001) #Train
-#score = network1.predict(X_test, y_test)
-#print(score)  # Evalute model
+activation = "RELU"
+initialization = "He"
 
-"""
-clf = MLPClassifier(activation="logistic", solver="sgd", alpha=0.0001, batch_size=2, learning_rate_init=0.01, max_iter=100)
-clf.fit(X_train, y_train)
-ytilde = clf.predict(X_test)
-print(clf.score(X_test, y_test))
-"""
+network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)  # Create network
+network1.train(1000, 10, 0.0001, 0.001) #Train
+pred = network1.predict(X_test)
+print(pred-t_test)
+print(accuracy_score(t_test, pred))  # Evalute model
+
+clf = MLPClassifier(activation="relu", solver="sgd", alpha=0.001, batch_size=10, learning_rate_init=0.0001, max_iter=1000, random_state=0)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+print(accuracy_score(t_test, t_predict))

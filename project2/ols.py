@@ -4,6 +4,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 from module1 import Sdg, Franke
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
 
 def create_X(x, y, n):
@@ -12,7 +13,7 @@ def create_X(x, y, n):
         y = np.ravel(y)
 
     N = len(x)
-    l = int((n+1)*(n+2)/2)        # Number of elements in beta
+    l = int((n+1)*(n+2)/2)    # Number of elements in beta
     X = np.ones((N, l))
 
     for i in range(1, n+1):
@@ -44,7 +45,15 @@ scaler = StandardScaler()  # Utilizing scikit's standardscaler
 scaler_x = scaler.fit(X_train)  # Scaling x-data
 X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
-model = LinearRegression().fit(X_train, z_train)
-ytilde = model.predict(X_test)
-print(mean_squared_error(z_test, ytilde))
-print(r2_score(z_test, ytilde))
+model_ols = LinearRegression().fit(X_train, z_train)
+ytilde_ols = model_ols.predict(X_test)
+print("OLS errors")
+print(mean_squared_error(z_test, ytilde_ols))
+print(r2_score(z_test, ytilde_ols))
+print("")
+
+model_ridge = Ridge(alpha=1e-7).fit(X_train, z_train)
+ytilde_ridge = model_ridge.predict(X_test)
+print("Ridge errors")
+print(mean_squared_error(z_test, ytilde_ridge))
+print(r2_score(z_test, ytilde_ridge))

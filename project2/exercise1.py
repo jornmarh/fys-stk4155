@@ -65,13 +65,13 @@ plt.ylabel('MSE')
 plt.ylim(0,1)
 plt.legend()
 plt.show()
-
+"""
 # For testing single values
-sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 10000)
+sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 100)
 print(sgdreg.stocastichGD_ols())
 
 
-
+"""
 # gridsearch for batch size vs learning rate
 print('gridsearch for batch size vs learning rate')
 batch_sizes = np.arange(5,30)
@@ -204,7 +204,7 @@ plt.ylabel('MSE')
 plt.ylim(0,1)
 plt.legend()
 plt.show()
-"""
+
 # Scikit
 sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=0, fit_intercept=False, max_iter=3000, \
 tol=0.001, shuffle=True, random_state=68, learning_rate='constant', eta0=0.002)
@@ -219,3 +219,4 @@ for i in range(len(epochs)):
     sgd_scikit.fit(X_train, z_train)
     z_pred_scikit = sgd_scikit.predict(X_train)
     print(mean_squared_error(z_train, z_pred_scikit))
+"""
