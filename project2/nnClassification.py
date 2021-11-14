@@ -148,11 +148,12 @@ class NN:
 
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
-            
+
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             else:
                 gradient_weigths = np.matmul(self.activations[layer-1].T, delta_l)
+                print(gradient_weigths)
                 gradient_biases = np.sum(delta_l, axis=0)
 
                 if (self.lmd > 0.0):
@@ -229,12 +230,14 @@ activation = "RELU"
 initialization = "He"
 
 network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)  # Create network
-network1.train(20, 100, 0.0001, 0.001) #Train
+network1.train(20, 100, 0.001, 0.000001) #Train
 pred = network1.predict(X_test)
 print(pred-t_test)
 print(accuracy_score(t_test, pred))  # Evalute model
 
+'''
 clf = MLPClassifier(activation="relu", solver="sgd", alpha=0.001, batch_size=10, learning_rate_init=0.0001, max_iter=200, random_state=0)
 clf.fit(X_train, t_train)
 t_predict = clf.predict(X_test)
 print(accuracy_score(t_test, t_predict))
+'''
