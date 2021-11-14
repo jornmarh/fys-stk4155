@@ -14,7 +14,8 @@ class NN:
                  n_hidden_layers,
                  n_hidden_neurons,
                  activation,
-                 initilize):
+                 initilize,
+                 printGrad=None):
 
         self.X_train = X_train
         self.t = targets
@@ -39,6 +40,12 @@ class NN:
 
         self.weights = self.createWeights(initilize)
         self.biases = self.createBiases()
+
+        if printGrad != None:
+            self.printGrad = True
+        else:
+            self.printGrad = False
+
 
     def createWeights(self, init):  # Function for creating weight-arrays for all layers
         weights = []
@@ -104,7 +111,6 @@ class NN:
         data = np.hstack((X, y.reshape(-1, 1)))
         np.random.shuffle(data)
         m = data.shape[0] // M
-        i=0
         for i in range(m):
             mini_batch = data[i * M:(i + 1)*M, :]
             X_mini = mini_batch[:, :-1]
@@ -120,7 +126,6 @@ class NN:
     def feed_forward_train(self):  # Forward progation for training the model
         self.activations = []
         self.zs = []
-
         z_h = np.matmul(self.xi, self.weights[0]) + self.biases[0]; self.zs.append(z_h)
         a_h = self.activation(z_h); self.activations.append(a_h)
         for layer in range(1, self.n_hidden_layers):
@@ -128,7 +133,6 @@ class NN:
             a_h = self.activation(z_h); self.activations.append(a_h)
         z_o = np.matmul(a_h, self.weights[-1]) + self.biases[-1]; self.zs.append(z_o)
         a_o = self.sigmoid(z_o); self.activations.append(a_o)
-
         return
 
     def feed_forward_predict(self, X):  # Final feed forward of a given test set
@@ -143,24 +147,19 @@ class NN:
     def back_propagation(self):  # Back propagation algorithm
         def grad(delta_l, layer):
             if (layer == 0):
-                gradient_weigths = np.matmul(self.xi.T, delta_l)
-                gradient_biases = np.sum(delta_l, axis=0)
-
+                self.gradient_weigths_input = np.matmul(self.xi.T, delta_l)
+                self.gradient_biases_input = np.sum(delta_l, axis=0)
                 if (self.lmd > 0.0):
-                    gradient_weigths += self.lmd * self.weights[layer]
-
-                self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
-                self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
+                    self.gradient_weigths_input += self.lmd * self.weights[layer]
+                self.weights[layer] = self.weights[layer] - self.eta * self.gradient_weigths_input
+                self.biases[layer] = self.biases[layer] - self.eta * self.gradient_biases_input
             else:
-                gradient_weigths = np.matmul(self.activations[layer-1].T, delta_l)
-                print(gradient_weigths)
-                gradient_biases = np.sum(delta_l, axis=0)
-
+                self.gradient_weigths_hidden = np.matmul(self.activations[layer-1].T, delta_l)
+                self.gradient_biases_hidden = np.sum(delta_l, axis=0)
                 if (self.lmd > 0.0):
-                    gradient_weigths += self.lmd * self.weights[layer]
-
-                self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
-                self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
+                    self.gradient_weigths_hidden += self.lmd * self.weights[layer]
+                self.weights[layer] = self.weights[layer] - self.eta * self.gradient_weigths_hidden
+                self.biases[layer] = self.biases[layer] - self.eta * self.gradient_biases_hidden
             return
 
         delta_l = self.activations[-1] - self.yi.reshape(-1, 1)
@@ -183,6 +182,10 @@ class NN:
                 self.xi, self.yi = mini_batch
                 self.feed_forward_train()
                 self.back_propagation()
+            if (self.printGrad == True):
+                print("Epoch: ", epoch)
+                print(self.gradient_weigths_hidden)
+                print(self.gradient_weigths_input)
 
     def predict(self, X):  # Function for predicting a binary classification set
         y = self.feed_forward_predict(X)
@@ -224,19 +227,19 @@ X_test = scaler_x.transform(X_test)
 
 # Defining the neural network
 n_hidden_neurons = 200
-n_hidden_layers = 2
+n_hidden_layers = 1
 
 activation = "RELU"
 initialization = "He"
 
-network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)  # Create network
-network1.train(20, 100, 0.001, 0.000001) #Train
+network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization, printGrad="True")  # Create network
+network1.train(20, 10, 0.01, 0.000001) #Train
 pred = network1.predict(X_test)
-print(pred-t_test)
+#print(pred-t_test)
 print(accuracy_score(t_test, pred))  # Evalute model
 
 '''
-clf = MLPClassifier(activation="relu", solver="sgd", alpha=0.001, batch_size=10, learning_rate_init=0.0001, max_iter=200, random_state=0)
+clf = MLPClassifier(activation="relu", solver="sgd", alpha=0.001, batch_size=10, learning_rate_init=0.0001, max_iter=100, random_state=0)
 clf.fit(X_train, t_train)
 t_predict = clf.predict(X_test)
 print(accuracy_score(t_test, t_predict))
