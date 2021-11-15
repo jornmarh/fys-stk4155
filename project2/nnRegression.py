@@ -7,18 +7,23 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPRegressor
 import pandas as pd
 import seaborn as sns
+from sklearn.model_selection import KFold
 
 class NN:
     def __init__(self,
                  X_train,
-                 targets,
+                 X_test,
+                 z_train,
+                 z_test,
                  n_hidden_layers,
                  n_hidden_neurons,
                  activation,
                  initilize):
 
         self.X_train = X_train
-        self.t = targets
+        self.X_test = X_test
+        self.z_train = z_train
+        self.z_test = z_test
 
         self.n_inputs, self.n_features = self.X_train.shape
         self.n_outputs = 1  # Binary classification case
@@ -45,6 +50,7 @@ class NN:
         self.biases = self.createBiases()
 
         self.mse = []
+        self.r2 = []
         self.epochs = []
 
     def createWeights(self, init):  # Function for creating weight-arrays for all layers
@@ -173,13 +179,11 @@ class NN:
                     gradient_weigths += self.lmd * self.weights[layer]
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
-                print(gradient_weigths)
             else:
                 gradient_weigths = np.matmul(self.activations[layer-1].T, delta_l)
                 gradient_biases = np.sum(delta_l, axis=0)
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
-                print(gradient_weigths)
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             return
@@ -201,16 +205,19 @@ class NN:
         i = 0
 
         for epoch in range(n_epochs):
-            mini_batches = self.create_miniBatches(self.X_train, self.t, M)
+            mini_batches = self.create_miniBatches(self.X_train, self.z_train, M)
             for mini_batch in mini_batches:
                 self.xi, self.yi = mini_batch
                 self.feed_forward_train()
                 self.back_propagation()
-            ytilde = self.predict(X_train)
-            mse = mean_squared_error(self.t, ytilde)
+            ytilde = self.predict(self.X_test)
+            mse = mean_squared_error(self.z_test, ytilde)
+            r2 = r2_score(self.z_test, ytilde)
             self.epochs.append(i)
             self.mse.append(mse)
+            self.r2.append(r2)
             i += 1
+            print(i)
 
     def predict(self, X): #Function for predicting a binary classification set
         y = self.feed_forward_predict(X);
@@ -255,6 +262,13 @@ scaler_x = scaler.fit(X_train)  # Scaling x-data
 X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
 
+"""
+# Initialization if CV is used
+z = (FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N))
+X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
+scaler = StandardScaler()
+X = scaler.fit(X).transform(X)
+"""
 # Defining the neural network
 n_hidden_neurons = 40
 n_hidden_layers = 2
@@ -273,65 +287,106 @@ print(r2_score(z_test.reshape(-1,1), yPredict))
 
 
 print("Scikit dnn")
-dnn = MLPRegressor(activation='relu', solver='sgd', alpha=0.000001, batch_size=10, learning_rate_init=0.001, max_iter=1000, random_state=0)
+dnn = MLPRegressor(activation='logistic', solver='sgd', alpha=1e-8, batch_size=10, learning_rate_init=0.001, max_iter=100, random_state=64)
 dnn.fit(X_train, z_train)
 zPredict = dnn.predict(X_test)
 print(mean_squared_error(z_test, zPredict))
 print(r2_score(z_test, zPredict))
-"""
-nn_sig_rand = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
-nn_sig_rand.train(100, 2, 0.001, 1e-8)
-plt.plot(nn_sig_rand.epochs,nn_sig_rand.mse)
-plt.legend()
-plt.xlabel('epochs')
-plt.ylabel('mse')
-plt.title('MSE as function of epochs with Sigmoid activation')
+
+# MSE as function of epochs with cross-validation and sigmoid activation
+cv_split = 0
+k = 5
+mse = np.zeros((k, 100))
+kfold = KFold(n_splits = k, shuffle=True)
+for train_indexes, test_indexes in kfold.split(X):
+        X_train = X[train_indexes]
+        X_test = X[test_indexes]
+        z_train = z[train_indexes]
+        z_test = z[test_indexes]
+
+        network = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+        network.train(100, 10, 0.001, 1e-8)
+        z_pred = network.predict(X_train)
+        mse[cv_split,:] = network.mse
+
+        cv_split += 1
+
+mse = np.mean(mse,axis=0)
+plt.plot(network.epochs, mse)
 plt.show()
-"""
+
+
+# MSE as function of epochs with sigmoid activation
+nn_sig_rand = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+nn_sig_rand.train(100, 10, 0.01, 1e-6)
+print("MSE: ",nn_sig_rand.mse[-1])
+plt.plot(nn_sig_rand.epochs,nn_sig_rand.mse, label='mse')
+plt.legend()
+plt.xlabel('Epochs')
+plt.ylabel('mse error')
+plt.title('Test mse error as function of epochs with Sigmoid activation')
+plt.show()
+
+# r^2 as function of epochs with sigmoid activation
+nn_sig_rand = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+nn_sig_rand.train(100, 10, 0.01, 1e-6)
+print("R2: ",nn_sig_rand.r2[-1])
+plt.plot(nn_sig_rand.epochs,nn_sig_rand.r2, label='$r^2$', color='red')
+plt.legend()
+plt.xlabel('Epochs')
+plt.ylabel('Error')
+plt.title('Test $r^2$ error as function of epochs with Sigmoid activation')
+plt.show()
+
+
+# Same, but old version
+epochs = np.arange(100)
+mse_epochs = np.zeros(len(epochs))
+for i in range(len(epochs)):
+    nn = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize)
+    nn.train(epochs[i], 10, 0.0001, 1e-7)
+    z_pred_epochs = nn.predict(X_test)
+    mse_epochs[i] = mean_squared_error(z_test,z_pred_epochs)
+    print(mse_epochs[i])
+
+plt.plot(epochs,mse_epochs)
+plt.show()
+
+
+
+
 # Gridsearch for eta/lambda
-etas = [0.0001,0.005,0.001,0.005, 0.001]
+etas = [0.0001,0.0005,0.001,0.005, 0.01]
 lambdas = [1e-2, 1e-4, 1e-6, 1e-8]
 #mse_grid_train = np.zeros((len(etas),len(lambdas)))
 mse_grid_test = np.zeros((len(etas),len(lambdas)))
 for i in range(len(etas)):
     for j in range(len(lambdas)):
-        nn = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize)
+        nn = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, activation, initilize)
         nn.train(100, 10, etas[i], lambdas[j])
         #z_pred = nn.predict(X_train)
         z_pred_test = nn.predict(X_test)
         #mse_grid_train[i,j] = mean_squared_error(z_train,z_pred)
-        mse_grid_test[i,j] = r2_score(z_test,z_pred_test)
+        mse_grid_test[i,j] = mean_squared_error(z_test,z_pred_test)
         print(mse_grid_test[i,j])
 
 #mse_df_train = pd.DataFrame(mse_grid_train, index = etas, columns = lambdas)
 mse_df_test = pd.DataFrame(mse_grid_test, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
 sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.4f')
-ax.set_title("Grid search for learning rate and regularisation parameter")
+ax.set_title("Test error gridsearch")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
-"""
 
-"""
-epochs = np.arange(100)
-mse_epochs = np.zeros(len(epochs))
-for i in range(len(epochs)):
-    nn = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize)
-    nn.train(epochs[i], 2, 0.001, 1e-7)
-    z_pred_epochs = nn.predict(X_train)
-    mse_epochs[i] = mean_squared_error(z_train,z_pred_epochs)
-    print(mse_epochs[i])
 
-plt.plot(epochs,mse_epochs)
-"""
 
-"""
+
 # Comparison of Xavier and Random initialisation with Sigmoid activation
-nn_sig_xav = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
-nn_sig_rand = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")
-nn_sig_xav.train(100, 2, 0.001, 1e-8)
-nn_sig_rand.train(100, 2, 0.001, 1e-8)
+nn_sig_xav = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+nn_sig_rand = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")
+nn_sig_xav.train(100, 10, 0.001, 1e-6)
+nn_sig_rand.train(100, 10, 0.001, 1e-6)
 #print(nn.mse)
 #print(nn.epochs)
 print("Lowest mse: ",nn_sig_xav.mse[-1])
@@ -342,20 +397,20 @@ plt.xlabel('epochs')
 plt.ylabel('mse')
 plt.title('MSE as function of epochs with Sigmoid activation')
 plt.show()
-"""
+
 
 """
 # comparison of Sigmoid, Relu, leaku Relu and Elu activation
 #np.random.seed(0)
-nn_sig_xav = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
-nn_relu_he = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "RELU", "He")
-nn_lrelu_he = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "leaky-RELU", "He")
-nn_elu_he = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "ELU", "He")
+nn_sig_xav = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+nn_relu_he = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "RELU", "He")
+nn_lrelu_he = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "leaky-RELU", "He")
+nn_elu_he = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "ELU", "He")
 
-nn_sig_xav.train(100, 10, 0.001, 1e-8)
-nn_relu_he.train(100, 10, 0.001, 1e-8)
-nn_lrelu_he.train(100, 10, 0.001, 1e-8)
-nn_elu_he.train(100, 10, 0.001, 1e-8)
+nn_sig_xav.train(200, 10, 0.0005, 1e-6)
+nn_relu_he.train(200, 10, 0.0005, 1e-6)
+nn_lrelu_he.train(200, 10, 0.0005, 1e-6)
+nn_elu_he.train(200, 10, 0.0005, 1e-6)
 #print(nn.mse)
 #print(nn.epochs)
 print("Lowest mse sigmoid: ",nn_sig_xav.mse[-1])
@@ -369,11 +424,25 @@ plt.plot(nn_elu_he.epochs,nn_elu_he.mse, label='Elu & He')
 plt.legend()
 plt.xlabel('epochs')
 plt.ylabel('mse')
-plt.title('MSE as function of epochs: Sigmoid vs Relu')
+plt.title('MSE as function of epochs: Comparison of different activations')
+plt.show()
+
+print("Lowest $r^2$ Sigmoid: ",nn_sig_xav.r2[-1])
+print("Lowest $r^2$ Relu: ",nn_relu_he.r2[-1])
+print("Lowest $r^2$ lRelu: ",nn_lrelu_he.r2[-1])
+print("Lowest $r^2$ ELU: ",nn_elu_he.r2[-1])
+plt.plot(nn_sig_xav.epochs,nn_sig_xav.r2, label='Sigmoid & Xavier')
+plt.plot(nn_relu_he.epochs,nn_relu_he.r2, label='Relu & He')
+plt.plot(nn_lrelu_he.epochs,nn_lrelu_he.r2, label='Leaky-relu & He')
+plt.plot(nn_elu_he.epochs,nn_elu_he.r2, label='Elu & He')
+plt.legend()
+plt.xlabel('epochs')
+plt.ylabel('$r^2 score$')
+plt.title('$r^2$ score as function of epochs: Comparison of different activations')
 plt.show()
 """
 
-"""
+
 neurons = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 layers = [1, 2, 3, 4]
 for i in range(len(neurons)):
