@@ -119,8 +119,8 @@ class Sdg:
                     if schedule == True:
                         self.eta = self.schedule(1e-6, epoch)
                     theta = theta - self.eta*g
-            self.ytilde_sgd_ols = self.X_train @ theta
-            mse_sgd_ols = mean_squared_error(self.y_train, self.ytilde_sgd_ols)
+            self.ytilde_sgd_ols = self.X_test @ theta
+            mse_sgd_ols = mean_squared_error(self.y_test, self.ytilde_sgd_ols)
             #print(mse_sgd_ols)
             return mse_sgd_ols
 
@@ -205,12 +205,12 @@ class Franke:
             q = int((i)*(i+1)/2)
             for k in range(i+1):
                 X[:,q+k] = (self.x**(i-k))*(self.y**k)
-
+        print(X)
         return X
 
     def scale(self, X, z):
         X_train, X_test, z_train, z_test = train_test_split(X,z)
-        scaler = StandardScaler() # Utilizing scikit's standardscaler
+        scaler = StandardScaler(with_mean=False) # Utilizing scikit's standardscaler
         scaler_x = scaler.fit(X_train) # Scaling x-data
         X_train = scaler_x.transform(X_train)
         X_test = scaler_x.transform(X_test)

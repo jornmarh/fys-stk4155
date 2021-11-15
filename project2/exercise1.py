@@ -52,30 +52,33 @@ print(r2_score(z_test, ytilde_ridge))
 
 
 
-"""
+
 # MSE as function of epochs with different learning rates
 print('MSE as function of epochs with different learning rates')
-etas = [0.0001,0.0005,0.001,0.005]
+etas = [0.0001,0.0005,0.001, 0.002]
 #etas = [0.001,0.005]
 epoch_nums = np.arange(1,100,2)
-batch_size = 5
+batch_size = 10
 mse = np.zeros((len(epoch_nums),len(etas)))
 print(mse.shape)
-
+best_mse = 1
 for i in range(len(epoch_nums)):
     for j in range(len(etas)):
         sgdreg = Sdg(X_train, X_test, z_train, z_test, etas[j], batch_size, epoch_nums[i])
         mse[i,j] = sgdreg.stocastichGD_ols()
         print(mse[i,j])
+        if mse[i,j] < best_mse:
+            best_mse = mse[i,j]
+print("Best mse: ",best_mse)
 
 plt.plot(epoch_nums, mse[:,0], label='$\eta$ = %.4f' %(etas[0]))
 plt.plot(epoch_nums, mse[:,1], label='$\eta$ = %.4f' %(etas[1]))
 plt.plot(epoch_nums, mse[:,2], label='$\eta$ = %.3f' %(etas[2]))
 plt.plot(epoch_nums, mse[:,3], label='$\eta$ = %.3f' %(etas[3]))
-plt.title('MSE as function of the number of epochs with different learning rates')
+plt.title('Test MSE as function of the number of epochs with different learning rates')
 plt.xlabel('Number of epochs')
 plt.ylabel('MSE')
-plt.ylim(0,1)
+plt.ylim(0,0.25)
 plt.legend()
 plt.show()
 """
@@ -85,7 +88,7 @@ plt.show()
 #print(sgdreg.stocastichGD_ols())
 
 
-"""
+
 # gridsearch for batch size vs learning rate
 print('gridsearch for batch size vs learning rate')
 batch_sizes = np.arange(5,30)
