@@ -173,11 +173,13 @@ class NN:
                     gradient_weigths += self.lmd * self.weights[layer]
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
+                print(gradient_weigths)
             else:
                 gradient_weigths = np.matmul(self.activations[layer-1].T, delta_l)
                 gradient_biases = np.sum(delta_l, axis=0)
                 if (self.lmd > 0.0):
                     gradient_weigths += self.lmd * self.weights[layer]
+                print(gradient_weigths)
                 self.weights[layer] = self.weights[layer] - self.eta * gradient_weigths
                 self.biases[layer] = self.biases[layer] - self.eta * gradient_biases
             return
@@ -257,7 +259,7 @@ X_test = scaler_x.transform(X_test)
 n_hidden_neurons = 40
 n_hidden_layers = 2
 activation = "Sigmoid"
-initilize = "Random"
+initilize = "Xavier"
 
 
 """
@@ -268,6 +270,7 @@ network1.train(100, 10, 0.001, 0.0000001) #Train
 yPredict = network1.predict(X_test)
 print(mean_squared_error(z_test.reshape(-1,1), yPredict))
 print(r2_score(z_test.reshape(-1,1), yPredict))
+
 
 print("Scikit dnn")
 dnn = MLPRegressor(activation='relu', solver='sgd', alpha=0.000001, batch_size=10, learning_rate_init=0.001, max_iter=1000, random_state=0)
