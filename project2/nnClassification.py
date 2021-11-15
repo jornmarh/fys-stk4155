@@ -14,7 +14,9 @@ from sklearn.model_selection import KFold
 class NN:
     def __init__(self,
                  X_train,
+                 X_test,
                  targets,
+                 targets_test,
                  n_hidden_layers,
                  n_hidden_neurons,
                  activation,
@@ -22,7 +24,9 @@ class NN:
                  printGrad=None):
 
         self.X_train = X_train
+        self.X_test = X_test
         self.t = targets
+        self.t_test = targets_test
 
         self.n_inputs, self.n_features = self.X_train.shape
         self.n_outputs = 1  # Binary classification case
@@ -49,7 +53,6 @@ class NN:
             self.printGrad = True
         else:
             self.printGrad = False
-
 
     def createWeights(self, init):  # Function for creating weight-arrays for all layers
         weights = []
@@ -82,6 +85,9 @@ class NN:
         O_b = np.zeros(self.n_outputs)
         biases.append(O_b)
         return biases
+
+    def accuracy_score(self, test, pred):  # Evaluation method
+        return np.sum(test == pred) / len(test)
 
     def sigmoid(self, x):  # Activation function
         return 1.0/(1.0 + np.exp(-x))
@@ -178,18 +184,27 @@ class NN:
 
     # method for training the model, with SGD(Without learning schedule, or other)
     def train(self, n_epochs, M, eta, _lambda):
+        acs = []
+
         self.eta = eta
         self.lmd = _lambda
+
         for epoch in range(n_epochs):
             mini_batches = self.create_miniBatches(self.X_train, self.t, M)
             for mini_batch in mini_batches:
                 self.xi, self.yi = mini_batch
                 self.feed_forward_train()
                 self.back_propagation()
+
             if (self.printGrad == True):
                 print("Epoch: ", epoch)
                 print(self.gradient_weigths_hidden)
                 print(self.gradient_weigths_input)
+
+            pred = self.predict(self.X_test)
+            acs.append(self.accuracy_score(self.t_test, pred))
+
+        return acs
 
     def predict(self, X):  # Function for predicting a binary classification set
         y = self.feed_forward_predict(X)
@@ -216,14 +231,14 @@ X = scaler.fit(X).transform(X)
 
 
 # Defining the neural network
-n_hidden_neurons = 200
+n_hidden_neurons = 50
 n_hidden_layers = 1
 activation = "Sigmoid"
 initialization = "Xavier"
 
-n_epochs = 100
+n_epochs = 200
 M = 10
-eta = 1e-2
+eta = 1e-3
 _lambda = 1e-7
 
 
@@ -233,34 +248,50 @@ _lambda = 1e-7
 k = 10
 kfold = KFold(n_splits = k, shuffle=True)
 
-score_own = np.zeros(k)
-score_scikit = np.zeros(k)
-
+score_own_cvd = np.zeros(k)
+score_scikit_cvd = np.zeros(k)
 cv_split = 0
+
+scores_cvd = []
+
 for train_indexes, test_indexes in kfold.split(X):
-        X_train = X[train_indexes]
-        X_test = X[test_indexes]
-        t_train = targets[train_indexes]
-        t_test = targets[test_indexes]
+    X_train = X[train_indexes]
+    X_test = X[test_indexes]
+    t_train = targets[train_indexes]
+    t_test = targets[test_indexes]
 
-        network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)
-        network1.train(n_epochs, M, eta, _lambda)
-        pred = network1.predict(X_test)
-        acs_own = accuracy_score(t_test, pred)
-        clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=_lambda, learning_rate_init=eta)
-        clf.fit(X_train, t_train)
-        t_predict = clf.predict(X_test)
-        acs_scikit = accuracy_score(t_test, t_predict)
+    network1 = NN(X_train, X_test, t_train, t_test, n_hidden_layers, n_hidden_neurons, activation, initialization)
+    acs_epochs = network1.train(n_epochs, M, eta, _lambda)
+    pred = network1.predict(X_test)
+    acs_own = accuracy_score(t_test, pred)
 
-        score_own[cv_split] = acs_own
-        score_scikit[cv_split] = acs_scikit
-        cv_split += 1
+    '''
+    clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=_lambda, learning_rate_init=eta)
+    clf.fit(X_train, t_train)
+    t_predict = clf.predict(X_test)
+    acs_scikit = accuracy_score(t_test, t_predict)
+    '''
 
-accuracy_own = np.mean(score_own)
-accuracy_scikit = np.mean(score_scikit)
-print(accuracy_own)
-print(accuracy_scikit)
+    scores_cvd.append(acs_epochs)
+    score_own_cvd[cv_split] = acs_own
+    #score_scikit_cvd[cv_split] = acs_scikit
 
+    cv_split += 1
+
+cvd_averges_epochs = np.asarray(scores_cvd)
+
+accuracy_epochs = np.mean(cvd_averges_epochs, axis=0)
+accuracy_own = np.mean(score_own_cvd); print("Own DNN: ", accuracy_own)
+#accuracy_scikit = np.mean(score_scikit_cvd); print("Scikit DNN: ",accuracy_scikit)
+
+epochs = np.arange(1, n_epochs+1)
+plt.plot(epochs, accuracy_epochs)
+plt.ylim(0.97, 0.98)
+#plt.xlim(85,125)
+plt.ylabel("Accuracy score")
+plt.xlabel("Iterations(epochs)")
+plt.title("Accuracy score for increasing iterations")
+plt.show()
 
 '''--------------------------------------------------------------------------------
                                 #TEST netoworks
