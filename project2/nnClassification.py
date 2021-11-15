@@ -6,6 +6,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
 from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold
+
+
 
 class NN:
     def __init__(self,
@@ -200,46 +204,63 @@ def accuracy_score(test, pred):  # Evaluation method
     return np.sum(test == pred) / len(test)
 
 # Initilize data
-np.random.seed(64)
 
+np.random.seed(2021) #Random seed
+
+#Load cancer data from scikit-learn
 cancer_data = load_breast_cancer()
 X = cancer_data.data
 targets = cancer_data.target
+scaler = StandardScaler()
+X = scaler.fit(X).transform(X)
 
+#Split and scale
 '''
-temp1=np.reshape(inputs[:,1],(len(inputs[:,1]),1))
-temp2=np.reshape(inputs[:,2],(len(inputs[:,2]),1))
-X=np.hstack((temp1,temp2))
-temp=np.reshape(inputs[:,5],(len(inputs[:,5]),1))
-X=np.hstack((X,temp))
-temp=np.reshape(inputs[:,8],(len(inputs[:,8]),1))
-X=np.hstack((X,temp))
-print(X.shape)
-del temp1,temp2,temp
-'''
-
-X_train, X_test, t_train, t_test = train_test_split(X,targets, test_size=0.1)
-
+#X_train, X_test, t_train, t_test = train_test_split(X,targets, test_size=0.2)
 scaler = StandardScaler()  # Utilizing scikit's standardscaler
 scaler_x = scaler.fit(X_train)  # Scaling x-data
 X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
+'''
 
 # Defining the neural network
-n_hidden_neurons = 200
+n_hidden_neurons = 100
 n_hidden_layers = 1
-
 activation = "RELU"
 initialization = "He"
 
-network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization, printGrad="True")  # Create network
-network1.train(20, 10, 0.01, 0.000001) #Train
-pred = network1.predict(X_test)
-#print(pred-t_test)
-print(accuracy_score(t_test, pred))  # Evalute model
+cv_split = 0
+k = 10
+score = np.zeros(k)
+kfold = KFold(n_splits = k, shuffle=True)
+for train_indexes, test_indexes in kfold.split(X):
+        X_train = X[train_indexes]
+        X_test = X[test_indexes]
+        t_train = targets[train_indexes]
+        t_test = targets[test_indexes]
 
+        network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)
+        network1.train(100, 10, 0.001, 0.01)
+        pred = network1.predict(X_test)
+        acs = accuracy_score(t_test, pred)
+
+        score[cv_split] = acs
+        cv_split += 1
+
+accuracy = np.mean(score)
+print(accuracy)
+
+#Neural network
 '''
-clf = MLPClassifier(activation="relu", solver="sgd", alpha=0.001, batch_size=10, learning_rate_init=0.0001, max_iter=100, random_state=0)
+network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)  # Create network, printGrad=True prints the gradients for every epoch
+network1.train(200, 10, 0.1, 0.000001) #Train network, epochsm batch_size, eta, lambda
+pred = network1.predict(X_test) #Predict on new data
+acs = accuracy_score(t_test, pred))  # Evalute model
+'''
+
+#Scikit-learn neural network
+'''
+clf = MLPClassifier(hidden_layer_sizes=(100), activation="logistic", solver="sgd", alpha=0.000001, learning_rate_init=0.1, max_iter=200, )
 clf.fit(X_train, t_train)
 t_predict = clf.predict(X_test)
 print(accuracy_score(t_test, t_predict))
