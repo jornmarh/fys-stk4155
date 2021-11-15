@@ -214,9 +214,6 @@ class Franke:
         scaler_x = scaler.fit(X_train) # Scaling x-data
         X_train = scaler_x.transform(X_train)
         X_test = scaler_x.transform(X_test)
-        scaler_z = scaler.fit(z_train.reshape(-1,1)) # Scaling z-data
-        z_train = scaler_z.transform(z_train.reshape(-1,1)).ravel()
-        z_test = scaler_z.transform(z_test.reshape(-1,1)).ravel()
         return X_train, X_test, z_train, z_test
 
     def format(self):

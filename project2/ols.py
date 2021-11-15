@@ -30,7 +30,7 @@ def FrankeFunction(x,y):
 	return term1 + term2 + term3 + term4
 
 np.random.seed(64)
-N = 200
+N = 20
 x = np.sort(np.random.uniform(0, 1, N))
 y = np.sort(np.random.uniform(0, 1, N))
 xmesh, ymesh = np.meshgrid(x,y)
@@ -38,13 +38,14 @@ xflat = np.ravel(xmesh); yflat = np.ravel(ymesh)
 
 z = (FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N))
 #X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
-X = create_X(xflat, yflat, 6)
+X = create_X(xflat, yflat, 5)
 
 X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
 scaler = StandardScaler()  # Utilizing scikit's standardscaler
 scaler_x = scaler.fit(X_train)  # Scaling x-data
 X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
+
 model_ols = LinearRegression().fit(X_train, z_train)
 ytilde_ols = model_ols.predict(X_test)
 print("OLS errors")
