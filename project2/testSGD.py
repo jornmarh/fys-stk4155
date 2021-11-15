@@ -44,7 +44,7 @@ def create_miniBatches(X,y, M):
 
 # Initialise data
 np.random.seed(64)
-N = 100
+N = 20
 polydegree = 5
 noise_coef = 0.15
 x = np.sort(np.random.uniform(0, 1, N)); y = np.sort(np.random.uniform(0, 1, N))

@@ -8,6 +8,8 @@ from module1 import Sdg, Franke
 from sklearn.linear_model import SGDRegressor
 import seaborn as sns
 import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
 sns.set()
 
 
@@ -26,7 +28,7 @@ def ridge_regression(X_train, y_train, lmd):
 
 # Initialise data
 np.random.seed(64)
-N = 50
+N = 20
 polydegree = 5
 noise_coef = 0.15
 x = np.sort(np.random.uniform(0, 1, N)); y = np.sort(np.random.uniform(0, 1, N))
@@ -35,8 +37,19 @@ x_mesh, y_mesh = np.meshgrid(x,y); x_flat = np.ravel(x_mesh); y_flat = np.ravel(
 input = Franke(x_flat, y_flat, polydegree, noise_coef)
 X_train, X_test, z_train, z_test = input.format()
 
-# OLS regression for comparison
-print("Analytical result from OLS:", ols_regression(X_train,z_train))
+model_ols = LinearRegression().fit(X_train, z_train)
+ytilde_ols = model_ols.predict(X_test)
+print("OLS errors")
+print(mean_squared_error(z_test, ytilde_ols))
+print(r2_score(z_test, ytilde_ols))
+print("")
+
+model_ridge = Ridge(alpha=1e-7).fit(X_train, z_train)
+ytilde_ridge = model_ridge.predict(X_test)
+print("Ridge errors")
+print(mean_squared_error(z_test, ytilde_ridge))
+print(r2_score(z_test, ytilde_ridge))
+
 
 
 """
@@ -66,9 +79,10 @@ plt.ylim(0,1)
 plt.legend()
 plt.show()
 """
+
 # For testing single values
-sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 100)
-print(sgdreg.stocastichGD_ols())
+#sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 100)
+#print(sgdreg.stocastichGD_ols())
 
 
 """

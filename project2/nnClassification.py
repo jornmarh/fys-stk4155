@@ -214,25 +214,29 @@ targets = cancer_data.target
 scaler = StandardScaler()
 X = scaler.fit(X).transform(X)
 
-#Split and scale
-'''
-#X_train, X_test, t_train, t_test = train_test_split(X,targets, test_size=0.2)
-scaler = StandardScaler()  # Utilizing scikit's standardscaler
-scaler_x = scaler.fit(X_train)  # Scaling x-data
-X_train = scaler_x.transform(X_train)
-X_test = scaler_x.transform(X_test)
-'''
 
 # Defining the neural network
-n_hidden_neurons = 100
+n_hidden_neurons = 200
 n_hidden_layers = 1
-activation = "RELU"
-initialization = "He"
+activation = "Sigmoid"
+initialization = "Xavier"
+
+n_epochs = 100
+M = 10
+eta = 1e-2
+_lambda = 1e-7
+
+
+'''--------------------------------------------------------------------------------
+                                CROSS VALIDATION
+--------------------------------------------------------------------------------'''
+k = 10
+kfold = KFold(n_splits = k, shuffle=True)
+
+score_own = np.zeros(k)
+score_scikit = np.zeros(k)
 
 cv_split = 0
-k = 10
-score = np.zeros(k)
-kfold = KFold(n_splits = k, shuffle=True)
 for train_indexes, test_indexes in kfold.split(X):
         X_train = X[train_indexes]
         X_test = X[test_indexes]
@@ -240,15 +244,27 @@ for train_indexes, test_indexes in kfold.split(X):
         t_test = targets[test_indexes]
 
         network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)
-        network1.train(100, 10, 0.001, 0.01)
+        network1.train(n_epochs, M, eta, _lambda)
         pred = network1.predict(X_test)
-        acs = accuracy_score(t_test, pred)
+        acs_own = accuracy_score(t_test, pred)
+        clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=_lambda, learning_rate_init=eta)
+        clf.fit(X_train, t_train)
+        t_predict = clf.predict(X_test)
+        acs_scikit = accuracy_score(t_test, t_predict)
 
-        score[cv_split] = acs
+        score_own[cv_split] = acs_own
+        score_scikit[cv_split] = acs_scikit
         cv_split += 1
 
-accuracy = np.mean(score)
-print(accuracy)
+accuracy_own = np.mean(score_own)
+accuracy_scikit = np.mean(score_scikit)
+print(accuracy_own)
+print(accuracy_scikit)
+
+
+'''--------------------------------------------------------------------------------
+                                #TEST netoworks
+--------------------------------------------------------------------------------'''
 
 #Neural network
 '''

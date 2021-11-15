@@ -1,0 +1,124 @@
+'''Test file '''
+
+------------------------------------------------------------------------------
+        BAR GRAPH DATA
+------------------------------------------------------------------------------
+clf = MLPClassifier(activation="relu", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_unscaled_relu = accuracy_score(t_test, t_predict)
+
+clf = MLPClassifier(activation="logistic", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_unscaled_sigmoid = accuracy_score(t_test, t_predict)
+
+
+scaler = StandardScaler()  # Utilizing scikit's standardscaler
+scaler_x = scaler.fit(X_train)  # Scaling x-data
+X_train = scaler_x.transform(X_train)
+X_test = scaler_x.transform(X_test)
+
+clf = MLPClassifier(activation="relu", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_scaled_relu = accuracy_score(t_test, t_predict)
+print(acs_scaled_relu)
+
+clf = MLPClassifier(activation="logistic", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_scaled_sigmoid = accuracy_score(t_test, t_predict)
+print(acs_scaled_sigmoid)
+
+inputs = X
+temp1=np.reshape(inputs[:,1],(len(inputs[:,1]),1))
+temp2=np.reshape(inputs[:,2],(len(inputs[:,2]),1))
+X=np.hstack((temp1,temp2))
+temp=np.reshape(inputs[:,5],(len(inputs[:,5]),1))
+X=np.hstack((X,temp))
+temp=np.reshape(inputs[:,8],(len(inputs[:,8]),1))
+X=np.hstack((X,temp))
+print(X.shape)
+del temp1,temp2,temp
+
+X_train, X_test, t_train, t_test = train_test_split(X,targets, test_size=0.2)
+scaler = StandardScaler()  # Utilizing scikit's standardscaler
+scaler_x = scaler.fit(X_train)  # Scaling x-data
+X_train = scaler_x.transform(X_train)
+X_test = scaler_x.transform(X_test)
+
+clf = MLPClassifier(activation="relu", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_dim_relu = accuracy_score(t_test, t_predict)
+
+clf = MLPClassifier(activation="logistic", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_dim_sigmoid = accuracy_score(t_test, t_predict)
+
+fig = plt.figure()
+data = ['Original', 'Scaled', 'Reduced dimensonality']
+acs_relu = [acs_unscaled_relu, acs_scaled_relu, acs_dim_relu]
+acs_sigmoid = [acs_unscaled_sigmoid, acs_scaled_sigmoid, acs_dim_sigmoid]
+plt.bar(data, acs_relu)
+plt.bar(data, acs_sigmoid)
+plt.ylabel('Accuracy score')
+plt.legend(labels=['RELU', 'Sigmoid'])
+plt.title("Comparrison of Original, scaled and dimension reduced data")
+plt.show()
+
+--------------------------------------------------------------------------------
+                    BAR GRAPH NUMBER OF NODES 1 HIDDEN LAYER
+--------------------------------------------------------------------------------
+#CVD
+cv_split = 0
+k = 10
+score_own = np.zeros(k)
+score_scikit = np.zeros(k)
+kfold = KFold(n_splits = k, shuffle=True)
+
+neurons = np.arange(20,220, 40)
+neuron_score_own = np.zeros(len(neurons))
+neuron_score_scikit = np.zeros(len(neurons))
+i = 0
+for n_hidden_neurons in neurons:
+    for train_indexes, test_indexes in kfold.split(X):
+            X_train = X[train_indexes]
+            X_test = X[test_indexes]
+            t_train = targets[train_indexes]
+            t_test = targets[test_indexes]
+
+            network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)
+            network1.train(100, 10, 1e-2, 1e-7)
+            pred = network1.predict(X_test)
+            acs_own = accuracy_score(t_test, pred)
+
+            clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=100, hidden_layer_sizes=(n_hidden_neurons), batch_size=10, alpha=1e-7, learning_rate_init=1e-2)
+            clf.fit(X_train, t_train)
+            t_predict = clf.predict(X_test)
+            acs_scikit = accuracy_score(t_test, t_predict)
+
+            score_own[cv_split] = acs_own
+            score_scikit[cv_split] = acs_scikit
+            cv_split += 1
+    cv_split = 0
+    print("done")
+    accuracy_own = np.mean(score_own)
+    accuracy_scikit = np.mean(score_scikit)
+    neuron_score_own[i] = accuracy_own
+    neuron_score_scikit[i] = accuracy_scikit
+    i+=1
+
+plt.plot(neurons, neuron_score_own, label='own')
+plt.plot(neurons, neuron_score_scikit, label='scikit')
+plt.legend()
+plt.title("Accuracy score for number of hidden neurons with 1 hidden layer")
+plt.ylabel("Accuracy score")
+plt.xlabel("Number of neurons")
+plt.show()
+
+--------------------------------------------------------------------------------
+                              ELSE
+--------------------------------------------------------------------------------
