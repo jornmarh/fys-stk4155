@@ -14,7 +14,7 @@ class Sdg:
         self.M = M
         self.n_epochs = n_epochs
         self.m = int(len(self.X_train)/self.M)
-
+    """
     def create_miniBatches(self, X,y, M):
         mini_batches = []
         data = np.hstack((X, y.reshape(-1,1)))
@@ -23,6 +23,26 @@ class Sdg:
         i = 0
 
         for i in range(m + 1):
+            mini_batch = data[i * M:(i + 1)*M, :]
+            X_mini = mini_batch[:, :-1]
+            Y_mini = mini_batch[:, -1]
+            mini_batches.append((X_mini, Y_mini))
+        if data.shape[0] % M != 0:
+            mini_batch = data[i * M:data.shape[0]]
+            X_mini = mini_batch[:, :-1]
+            Y_mini = mini_batch[:, -1]
+            mini_batches.append((X_mini, Y_mini))
+        return mini_batches
+    """
+
+    # Method for creating minibatches for SGD
+    def create_miniBatches(self, X, y, M):
+        mini_batches = []
+        data = np.hstack((X, y.reshape(-1, 1)))
+        np.random.shuffle(data)
+        m = data.shape[0] // M
+        i=0
+        for i in range(m):
             mini_batch = data[i * M:(i + 1)*M, :]
             X_mini = mini_batch[:, :-1]
             Y_mini = mini_batch[:, -1]

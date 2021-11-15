@@ -5,6 +5,8 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPRegressor
+import pandas as pd
+import seaborn as sns
 
 class NN:
     def __init__(self,
@@ -41,6 +43,9 @@ class NN:
 
         self.weights = self.createWeights(initilize)
         self.biases = self.createBiases()
+
+        self.mse = []
+        self.epochs = []
 
     def createWeights(self, init):  # Function for creating weight-arrays for all layers
         weights = []
@@ -190,12 +195,20 @@ class NN:
     def train(self, n_epochs, M, eta, _lambda):
         self.eta = eta
         self.lmd = _lambda
+
+        i = 0
+
         for epoch in range(n_epochs):
             mini_batches = self.create_miniBatches(self.X_train, self.t, M)
             for mini_batch in mini_batches:
                 self.xi, self.yi = mini_batch
                 self.feed_forward_train()
                 self.back_propagation()
+            ytilde = self.predict(X_train)
+            mse = mean_squared_error(self.t, ytilde)
+            self.epochs.append(i)
+            self.mse.append(mse)
+            i += 1
 
     def predict(self, X): #Function for predicting a binary classification set
         y = self.feed_forward_predict(X);
@@ -243,19 +256,129 @@ X_test = scaler_x.transform(X_test)
 # Defining the neural network
 n_hidden_neurons = 40
 n_hidden_layers = 2
-activation = "RELU"
-initilize = "He"
+activation = "Sigmoid"
+initilize = "Random"
 
+
+"""
+# Own dnn vs Scikit
 print("Own dnn")
 network1 = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize) #Create network
-network1.train(1000, 2, 0.001, 0.0000001) #Train
+network1.train(100, 10, 0.001, 0.0000001) #Train
 yPredict = network1.predict(X_test)
 print(mean_squared_error(z_test.reshape(-1,1), yPredict))
 print(r2_score(z_test.reshape(-1,1), yPredict))
 
 print("Scikit dnn")
-dnn = MLPRegressor(activation='relu', solver='sgd', alpha=0.000001, batch_size=2, learning_rate_init=0.001, max_iter=1000, random_state=0)
+dnn = MLPRegressor(activation='relu', solver='sgd', alpha=0.000001, batch_size=10, learning_rate_init=0.001, max_iter=1000, random_state=0)
 dnn.fit(X_train, z_train)
 zPredict = dnn.predict(X_test)
 print(mean_squared_error(z_test, zPredict))
 print(r2_score(z_test, zPredict))
+"""
+nn_sig_rand = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+nn_sig_rand.train(100, 2, 0.001, 1e-8)
+plt.plot(nn_sig_rand.epochs,nn_sig_rand.mse)
+plt.legend()
+plt.xlabel('epochs')
+plt.ylabel('mse')
+plt.title('MSE as function of epochs with Sigmoid activation')
+plt.show()
+"""
+# Gridsearch for eta/lambda
+etas = [0.0001,0.005,0.001,0.005, 0.001]
+lambdas = [1e-2, 1e-4, 1e-6, 1e-8]
+#mse_grid_train = np.zeros((len(etas),len(lambdas)))
+mse_grid_test = np.zeros((len(etas),len(lambdas)))
+for i in range(len(etas)):
+    for j in range(len(lambdas)):
+        nn = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize)
+        nn.train(100, 10, etas[i], lambdas[j])
+        #z_pred = nn.predict(X_train)
+        z_pred_test = nn.predict(X_test)
+        #mse_grid_train[i,j] = mean_squared_error(z_train,z_pred)
+        mse_grid_test[i,j] = r2_score(z_test,z_pred_test)
+        print(mse_grid_test[i,j])
+
+#mse_df_train = pd.DataFrame(mse_grid_train, index = etas, columns = lambdas)
+mse_df_test = pd.DataFrame(mse_grid_test, index = etas, columns = lambdas)
+fig, ax = plt.subplots(figsize = (7, 7))
+sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.4f')
+ax.set_title("Grid search for learning rate and regularisation parameter")
+ax.set_xlabel("$\lambda$")
+ax.set_ylabel("$\eta$")
+plt.show()
+"""
+
+"""
+epochs = np.arange(100)
+mse_epochs = np.zeros(len(epochs))
+for i in range(len(epochs)):
+    nn = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize)
+    nn.train(epochs[i], 2, 0.001, 1e-7)
+    z_pred_epochs = nn.predict(X_train)
+    mse_epochs[i] = mean_squared_error(z_train,z_pred_epochs)
+    print(mse_epochs[i])
+
+plt.plot(epochs,mse_epochs)
+"""
+
+"""
+# Comparison of Xavier and Random initialisation with Sigmoid activation
+nn_sig_xav = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+nn_sig_rand = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")
+nn_sig_xav.train(100, 2, 0.001, 1e-8)
+nn_sig_rand.train(100, 2, 0.001, 1e-8)
+#print(nn.mse)
+#print(nn.epochs)
+print("Lowest mse: ",nn_sig_xav.mse[-1])
+plt.plot(nn_sig_xav.epochs,nn_sig_xav.mse, label='Xavier')
+plt.plot(nn_sig_rand.epochs,nn_sig_rand.mse, label='Random')
+plt.legend()
+plt.xlabel('epochs')
+plt.ylabel('mse')
+plt.title('MSE as function of epochs with Sigmoid activation')
+plt.show()
+"""
+
+"""
+# comparison of Sigmoid, Relu, leaku Relu and Elu activation
+#np.random.seed(0)
+nn_sig_xav = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+nn_relu_he = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "RELU", "He")
+nn_lrelu_he = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "leaky-RELU", "He")
+nn_elu_he = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "ELU", "He")
+
+nn_sig_xav.train(100, 10, 0.001, 1e-8)
+nn_relu_he.train(100, 10, 0.001, 1e-8)
+nn_lrelu_he.train(100, 10, 0.001, 1e-8)
+nn_elu_he.train(100, 10, 0.001, 1e-8)
+#print(nn.mse)
+#print(nn.epochs)
+print("Lowest mse sigmoid: ",nn_sig_xav.mse[-1])
+print("Lowest mse Relu: ",nn_relu_he.mse[-1])
+print("Lowest mse lRelu: ",nn_lrelu_he.mse[-1])
+print("Lowest mse ELU: ",nn_elu_he.mse[-1])
+plt.plot(nn_sig_xav.epochs,nn_sig_xav.mse, label='Sigmoid & Xavier')
+plt.plot(nn_relu_he.epochs,nn_relu_he.mse, label='Relu & He')
+plt.plot(nn_lrelu_he.epochs,nn_lrelu_he.mse, label='Leaky-relu & He')
+plt.plot(nn_elu_he.epochs,nn_elu_he.mse, label='Elu & He')
+plt.legend()
+plt.xlabel('epochs')
+plt.ylabel('mse')
+plt.title('MSE as function of epochs: Sigmoid vs Relu')
+plt.show()
+"""
+
+"""
+neurons = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+layers = [1, 2, 3, 4]
+for i in range(len(neurons)):
+    for j in range(len(layers)):
+        nn_relu_he = NN(X_train, z_train, layers[j], neurons[i], "RELU", "He")
+        print("Neurons: ", neurons[i])
+        print("Layers: ", layers[j])
+        nn_relu_he.train(100, 10, 0.0005, 1e-8)
+        print(nn_relu_he.mse[-1])
+        print("")
+"""
