@@ -8,9 +8,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import KFold
 from sklearn.model_selection import KFold
-
-
-
+import seaborn as sns
+import pandas as pd
 class NN:
     def __init__(self,
                  X_train,
@@ -238,8 +237,8 @@ initialization = "Xavier"
 
 n_epochs = 200
 M = 10
-eta = 1e-3
-_lambda = 1e-7
+etas = [1e-4, 1e-3, 1e-2, 5e-2, 1e-1]
+lambdas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
 
 
 '''--------------------------------------------------------------------------------
@@ -249,49 +248,76 @@ k = 10
 kfold = KFold(n_splits = k, shuffle=True)
 
 score_own_cvd = np.zeros(k)
+score_own_train_cvd = np.zeros(k)
 score_scikit_cvd = np.zeros(k)
-cv_split = 0
+score_scikit_train_cvd = np.zeros(k)
 
-scores_cvd = []
 
-for train_indexes, test_indexes in kfold.split(X):
-    X_train = X[train_indexes]
-    X_test = X[test_indexes]
-    t_train = targets[train_indexes]
-    t_test = targets[test_indexes]
+acc_grid_own = np.zeros((len(etas), len(lambdas)))
+acc_grid_own_train = np.zeros((len(etas), len(lambdas)))
+acc_grid_scikit = np.zeros((len(etas), len(lambdas)))
+acc_grid_scikit_train = np.zeros((len(etas), len(lambdas)))
+sns.set()
 
-    network1 = NN(X_train, X_test, t_train, t_test, n_hidden_layers, n_hidden_neurons, activation, initialization)
-    acs_epochs = network1.train(n_epochs, M, eta, _lambda)
-    pred = network1.predict(X_test)
-    acs_own = accuracy_score(t_test, pred)
+i = 0
+for eta in etas:
+    j = 0
+    for lmd in lambdas:
+        cv_split = 0
+        for train_indexes, test_indexes in kfold.split(X):
+            X_train = X[train_indexes]
+            X_test = X[test_indexes]
+            t_train = targets[train_indexes]
+            t_test = targets[test_indexes]
 
-    '''
-    clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=_lambda, learning_rate_init=eta)
-    clf.fit(X_train, t_train)
-    t_predict = clf.predict(X_test)
-    acs_scikit = accuracy_score(t_test, t_predict)
-    '''
+            #network1 = NN(X_train, X_test, t_train, t_test, n_hidden_layers, n_hidden_neurons, activation, initialization)
+            #network1.train(n_epochs, M, eta, lmd)
 
-    scores_cvd.append(acs_epochs)
-    score_own_cvd[cv_split] = acs_own
-    #score_scikit_cvd[cv_split] = acs_scikit
+            #pred = network1.predict(X_test)
+            #acs_own = accuracy_score(t_test, pred)
+            #score_own_cvd[cv_split] = acs_own
 
-    cv_split += 1
+            #pred_train = network1.predict(X_train)
+            #acs_own_train = accuracy_score(t_train, pred_train)
+            #score_own_train_cvd[cv_split] = acs_own_train
 
-cvd_averges_epochs = np.asarray(scores_cvd)
+            clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=lmd, learning_rate_init=eta)
+            clf.fit(X_train, t_train)
 
-accuracy_epochs = np.mean(cvd_averges_epochs, axis=0)
-accuracy_own = np.mean(score_own_cvd); print("Own DNN: ", accuracy_own)
-#accuracy_scikit = np.mean(score_scikit_cvd); print("Scikit DNN: ",accuracy_scikit)
+            #t_predict = clf.predict(X_test)
+            #acs_scikit = accuracy_score(t_test, t_predict)
+            #score_scikit_cvd[cv_split] = acs_scikit
 
-epochs = np.arange(1, n_epochs+1)
-plt.plot(epochs, accuracy_epochs)
-plt.ylim(0.97, 0.98)
-#plt.xlim(85,125)
-plt.ylabel("Accuracy score")
-plt.xlabel("Iterations(epochs)")
-plt.title("Accuracy score for increasing iterations")
+            t_predict_train = clf.predict(X_train)
+            acs_scikit_train = accuracy_score(t_train, t_predict_train)
+            score_scikit_train_cvd[cv_split] = acs_scikit_train
+
+            cv_split += 1
+
+        #accuracy_own = np.mean(score_own_cvd); print("eta, lambda: ({}, {}): Own DNN test: {}".format(eta,lmd,accuracy_own))
+        #acc_grid_own[i][j] = accuracy_own
+
+        #accuracy_own_train = np.mean(score_own_train_cvd); print("itr ({}, {}): Own DNN train: {}".format(i,j,accuracy_own_train))
+        #acc_grid_own_train[i][j] = accuracy_own_train
+
+        #accuracy_scikit = np.mean(score_scikit_cvd); print("itr ({}, {}): Scikit DNN: {}".format(i,j,accuracy_scikit))
+        #acc_grid_scikit[i][j] = accuracy_scikit
+
+        accuracy_scikit_train = np.mean(score_scikit_train_cvd); print("itr ({}, {}): Scikit DNN train: {}".format(i,j,accuracy_scikit_train))
+        acc_grid_scikit_train[i][j] = accuracy_scikit_train
+
+
+        j+= 1
+    i += 1
+test = pd.DataFrame(acc_grid_scikit_train, index = etas, columns = lambdas)
+fig, ax = plt.subplots()
+sns.heatmap(test, annot=True, ax=ax, cmap='viridis', fmt='.4f', vmax=1, vmin=0.95)
+ax.set_title('Train data accuracy score')
+ax.set_xlabel(r'$\lambda$')
+ax.set_ylabel(r'$\eta$')
 plt.show()
+
+
 
 '''--------------------------------------------------------------------------------
                                 #TEST netoworks
