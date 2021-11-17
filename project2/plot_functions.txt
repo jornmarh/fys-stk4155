@@ -264,10 +264,9 @@ initialization = "Xavier"
 
 n_epochs = 200
 M = 10
-etas = [1e-4, 1e-3, 1e-2, 1e-1, 5e-1]
-lambdas = [1e-8, 1e-6, 1e-4, 1e-2, 1]
+etas = [1e-4, 1e-3, 1e-2, 5e-2, 1e-1]
+lambdas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
 
-k = 10
 kfold = KFold(n_splits = k, shuffle=True)
 
 score_own_cvd = np.zeros(k)
@@ -307,36 +306,35 @@ for eta in etas:
             clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=lmd, learning_rate_init=eta)
             clf.fit(X_train, t_train)
 
-            t_predict = clf.predict(X_test)
-            acs_scikit = accuracy_score(t_test, t_predict)
-            score_scikit_cvd[cv_split] = acs_scikit
+            #t_predict = clf.predict(X_test)
+            #acs_scikit = accuracy_score(t_test, t_predict)
+            #score_scikit_cvd[cv_split] = acs_scikit
 
-            #t_predict_train = clf.predict(X_train)
-            #acs_scikit_train = accuracy_score(t_train, t_predict_train)
-            #score_scikit_train_cvd[cv_split] = acs_scikit_train
+            t_predict_train = clf.predict(X_train)
+            acs_scikit_train = accuracy_score(t_train, t_predict_train)
+            score_scikit_train_cvd[cv_split] = acs_scikit_train
 
             cv_split += 1
 
-        #accuracy_own = np.mean(score_own_cvd); print("itr ({}, {}): Own DNN test: {}".format(i,j,accuracy_own))
+        #accuracy_own = np.mean(score_own_cvd); print("eta, lambda: ({}, {}): Own DNN test: {}".format(eta,lmd,accuracy_own))
         #acc_grid_own[i][j] = accuracy_own
 
         #accuracy_own_train = np.mean(score_own_train_cvd); print("itr ({}, {}): Own DNN train: {}".format(i,j,accuracy_own_train))
         #acc_grid_own_train[i][j] = accuracy_own_train
 
+        #accuracy_scikit = np.mean(score_scikit_cvd); print("itr ({}, {}): Scikit DNN: {}".format(i,j,accuracy_scikit))
+        #acc_grid_scikit[i][j] = accuracy_scikit
 
-        accuracy_scikit = np.mean(score_scikit_cvd); print("itr ({}, {}): Scikit DNN: {}".format(i,j,accuracy_scikit))
-        acc_grid_scikit[i][j] = accuracy_scikit
-
-        #accuracy_scikit_train = np.mean(score_scikit_train_cvd); print("itr ({}, {}): Scikit DNN train: {}".format(i,j,accuracy_scikit_train))
-        #acc_grid_scikit_train[i][j] = accuracy_scikit_train
+        accuracy_scikit_train = np.mean(score_scikit_train_cvd); print("itr ({}, {}): Scikit DNN train: {}".format(i,j,accuracy_scikit_train))
+        acc_grid_scikit_train[i][j] = accuracy_scikit_train
 
 
         j+= 1
     i += 1
-test = pd.DataFrame(acc_grid_scikit_test, index = etas, columns = lambdas)
+test = pd.DataFrame(acc_grid_scikit_train, index = etas, columns = lambdas)
 fig, ax = plt.subplots()
-sns.heatmap(test, annot=True, ax=ax, cmap='viridis', fmt='.4f')
-ax.set_title('Test data accuracy score Scikit-learn')
+sns.heatmap(test, annot=True, ax=ax, cmap='viridis', fmt='.4f', vmax=1, vmin=0.95)
+ax.set_title('Train data accuracy score')
 ax.set_xlabel(r'$\lambda$')
 ax.set_ylabel(r'$\eta$')
 plt.show()
