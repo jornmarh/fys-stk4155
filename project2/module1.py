@@ -14,26 +14,10 @@ class Sdg:
         self.M = M
         self.n_epochs = n_epochs
         self.m = int(len(self.X_train)/self.M)
-    """
-    def create_miniBatches(self, X,y, M):
-        mini_batches = []
-        data = np.hstack((X, y.reshape(-1,1)))
-        np.random.shuffle(data)
-        m = data.shape[0] // M
-        i = 0
 
-        for i in range(m + 1):
-            mini_batch = data[i * M:(i + 1)*M, :]
-            X_mini = mini_batch[:, :-1]
-            Y_mini = mini_batch[:, -1]
-            mini_batches.append((X_mini, Y_mini))
-        if data.shape[0] % M != 0:
-            mini_batch = data[i * M:data.shape[0]]
-            X_mini = mini_batch[:, :-1]
-            Y_mini = mini_batch[:, -1]
-            mini_batches.append((X_mini, Y_mini))
-        return mini_batches
-    """
+        self.mse = []
+        self.r2 = []
+        self.epochs = []
 
     # Method for creating minibatches for SGD
     def create_miniBatches(self, X, y, M):
@@ -71,7 +55,7 @@ class Sdg:
         print(mse)
         return mse
 
-    def stocastichGD_ols(self, algo='normalsgd', gamma=0.01, beta=0.9, eps=1e-8, schedule=False):
+    def stocastichGD_ols(self, algo='normalsgd', gamma=0.01, beta=0.9, eps=1e-8, schedule=False, decay=1e-6):
         np.random.seed(64)
         theta = np.random.randn(self.X_train.shape[1])
 
@@ -81,19 +65,25 @@ class Sdg:
         # Momentum velocity term
         v = np.random.randn(self.X_train.shape[1])
 
-        if algo == "rmsprop":
+        if algo == "normalsgd":
             for epoch in range(self.n_epochs):
                 mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
                 for mini_batch in mini_batches:
                     xi,yi = mini_batch
-                    g = 2.0*xi.T @ ((xi @ theta)-yi)
-                    s = beta*s + (1-beta)*np.dot(g,g)
-                    d_theta = self.eta/(np.sqrt(s+eps))*g
-                    theta = theta - d_theta
-            self.ytilde_sgd_ols = self.X_train @ theta
-            mse_sgd_ols = mean_squared_error(self.y_train, self.ytilde_sgd_ols)
-            #print(mse_sgd_ols)
-            return mse_sgd_ols
+                    g = 2.0*xi.T@((xi@theta)-yi)
+                    if schedule == True:
+                        self.eta = self.schedule(decay, epoch)
+                    theta = theta - self.eta*g
+                # Get errors after each epoch
+                y_pred_epoch = self.X_test @ theta
+                self.epochs.append(epoch)
+                self.mse.append(mean_squared_error(self.y_test, y_pred_epoch))
+                self.r2.append(r2_score(self.y_test, y_pred_epoch))
+
+            self.ytilde_sgd_ols = self.X_test @ theta
+            mse_sgd_ols = mean_squared_error(self.y_test, self.ytilde_sgd_ols)
+            r2_sgd_ols = r2_score(self.y_test, self.ytilde_sgd_ols)
+            return mse_sgd_ols, r2_sgd_ols
 
         elif algo == "momentum":
             for epoch in range(self.n_epochs):
@@ -105,24 +95,38 @@ class Sdg:
                     if schedule == True:
                         self.eta = self.schedule(1e-6, epoch)
                     theta = theta + v
-            self.ytilde_sgd_ols = self.X_train @ theta
-            mse_sgd_ols = mean_squared_error(self.y_train, self.ytilde_sgd_ols)
-            print(mse_sgd_ols)
-            return mse_sgd_ols
 
-        elif algo == "normalsgd":
+                y_pred_epoch = self.X_test @ theta
+                self.epochs.append(epoch)
+                self.mse.append(mean_squared_error(self.y_test, y_pred_epoch))
+                self.r2.append(r2_score(self.y_test, y_pred_epoch))
+
+            self.ytilde_sgd_ols = self.X_test @ theta
+            mse_sgd_ols = mean_squared_error(self.y_test, self.ytilde_sgd_ols)
+            r2_sgd_ols = r2_score(self.y_test, self.ytilde_sgd_ols)
+            return mse_sgd_ols, r2_sgd_ols
+
+        elif algo == "rmsprop":
             for epoch in range(self.n_epochs):
                 mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
                 for mini_batch in mini_batches:
                     xi,yi = mini_batch
-                    g = 2.0*xi.T@((xi@theta)-yi)
-                    if schedule == True:
-                        self.eta = self.schedule(1e-6, epoch)
-                    theta = theta - self.eta*g
+                    g = 2.0*xi.T @ ((xi @ theta)-yi)
+                    s = beta*s + (1-beta)*np.dot(g,g)
+                    d_theta = self.eta/(np.sqrt(s+eps))*g
+                    theta = theta - d_theta
+
+                y_pred_epoch = self.X_test @ theta
+                self.epochs.append(epoch)
+                self.mse.append(mean_squared_error(self.y_test, y_pred_epoch))
+                self.r2.append(r2_score(self.y_test, y_pred_epoch))
+
             self.ytilde_sgd_ols = self.X_test @ theta
             mse_sgd_ols = mean_squared_error(self.y_test, self.ytilde_sgd_ols)
-            #print(mse_sgd_ols)
-            return mse_sgd_ols
+            r2_sgd_ols = r2_score(self.y_test, self.ytilde_sgd_ols)
+            return mse_sgd_ols, r2_sgd_ols
+
+
 
     def stocastichGD_ridge(self, lmd, algo='normalsgd', gamma=0.01, beta=0.9, eps=1e-8, schedule=False):
         np.random.seed(64)
@@ -134,19 +138,32 @@ class Sdg:
         # SGD velocity term
         v = np.random.randn(self.X_train.shape[1])
 
-        if algo == "rmsprop":
+        if algo == "normalsgd":
             for epoch in range(self.n_epochs):
                 mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
                 for mini_batch in mini_batches:
                     xi,yi = mini_batch
                     g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
-                    s = beta*s + (1-beta)*np.dot(g,g)
-                    d_theta = self.eta/(np.sqrt(s+eps))*g
-                    theta = theta - d_theta
-            self.ytilde_sgd_ridge = self.X_train @ theta
-            mse_sgd_ridge = mean_squared_error(self.y_train, self.ytilde_sgd_ridge)
-            print(mse_sgd_ridge)
-            return mse_sgd_ridge
+                    if schedule == True:
+                        self.eta = self.schedule(1e-6, epoch)
+                    theta = theta - self.eta*g
+
+                y_pred_epoch = self.X_test @ theta
+                self.epochs.append(epoch)
+                self.mse.append(mean_squared_error(self.y_test, y_pred_epoch))
+                self.r2.append(r2_score(self.y_test, y_pred_epoch))
+
+            self.ytilde_sgd_ridge = self.X_test @ theta
+            mse_sgd_ridge = mean_squared_error(self.y_test, self.ytilde_sgd_ridge)
+            r2_sgd_ridge = r2_score(self.y_test, self.ytilde_sgd_ridge)
+            self.epochs.append(epoch)
+            self.mse.append(mse_sgd_ridge)
+            self.r2.append(r2_sgd_ridge)
+            print("mse: ", mse_sgd_ridge)
+            print("lmd: ", lmd)
+            print("eta: ", self.eta)
+            print("")
+            return mse_sgd_ridge, r2_sgd_ridge
 
         elif algo == "momentum":
                 for epoch in range(self.n_epochs):
@@ -158,27 +175,45 @@ class Sdg:
                         if schedule == True:
                             self.eta = self.schedule(1e-6, epoch)
                         theta = theta + v
-                self.ytilde_sgd_ridge = self.X_train @ theta
-                mse_sgd_ridge = mean_squared_error(self.y_train, self.ytilde_sgd_ridge)
-                print(mse_sgd_ridge)
-                return mse_sgd_ridge
 
-        elif algo == "normalsgd":
+                    y_pred_epoch = self.X_test @ theta
+                    self.epochs.append(epoch)
+                    self.mse.append(mean_squared_error(self.y_test, y_pred_epoch))
+                    self.r2.append(r2_score(self.y_test, y_pred_epoch))
+
+                self.ytilde_sgd_ridge = self.X_test @ theta
+                mse_sgd_ridge = mean_squared_error(self.y_test, self.ytilde_sgd_ridge)
+                r2_sgd_ridge = r2_score(self.y_test, self.ytilde_sgd_ols)
+                self.epochs.append(epoch)
+                self.mse.append(mse_sgd_ols)
+                self.r2.append(r2_sgd_ols)
+                print(mse_sgd_ridge)
+                return mse_sgd_ridge, r2_sgd_ridge
+
+        elif algo == "rmsprop":
             for epoch in range(self.n_epochs):
                 mini_batches = self.create_miniBatches(self.X_train, self.y_train, self.M)
                 for mini_batch in mini_batches:
                     xi,yi = mini_batch
                     g = 2.0*xi.T@((xi@theta)-yi) + 2.0*lmd*theta
-                    if schedule == True:
-                        self.eta = self.schedule(1e-6, epoch)
-                    theta = theta - self.eta*g
-            self.ytilde_sgd_ridge = self.X_train @ theta
-            mse_sgd_ridge = mean_squared_error(self.y_train, self.ytilde_sgd_ridge)
-            print("mse: ", mse_sgd_ridge)
-            print("lmd: ", lmd)
-            print("eta: ", self.eta)
-            print("")
-            return mse_sgd_ridge
+                    s = beta*s + (1-beta)*np.dot(g,g)
+                    d_theta = self.eta/(np.sqrt(s+eps))*g
+                    theta = theta - d_theta
+
+                y_pred_epoch = self.X_test @ theta
+                self.epochs.append(epoch)
+                self.mse.append(mean_squared_error(self.y_test, y_pred_epoch))
+                self.r2.append(r2_score(self.y_test, y_pred_epoch))
+
+            self.ytilde_sgd_ridge = self.X_test @ theta
+            mse_sgd_ridge = mean_squared_error(self.y_test, self.ytilde_sgd_ridge)
+            r2_sgd_ridge = r2_score(self.y_test, self.ytilde_sgd_ols)
+            self.epochs.append(epoch)
+            self.mse.append(mse_sgd_ols)
+            self.r2.append(r2_sgd_ols)
+            print(mse_sgd_ridge)
+            return mse_sgd_ridge, r2_sgd_ridge
+
 
 class Franke:
     def __init__(self, x, y, polydegree, noise):
@@ -205,7 +240,6 @@ class Franke:
             q = int((i)*(i+1)/2)
             for k in range(i+1):
                 X[:,q+k] = (self.x**(i-k))*(self.y**k)
-        print(X)
         return X
 
     def scale(self, X, z):
