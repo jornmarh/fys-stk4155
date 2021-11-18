@@ -47,13 +47,13 @@ print("OLS errors")
 print(mean_squared_error(z_test, ytilde_ols))
 print(r2_score(z_test, ytilde_ols))
 print("")
-
+"""
 model_ridge = Ridge(alpha=1e-7).fit(X_train, z_train)
 ytilde_ridge = model_ridge.predict(X_test)
 print("Ridge errors")
 print(mean_squared_error(z_test, ytilde_ridge))
 print(r2_score(z_test, ytilde_ridge))
-
+"""
 
 # For testing single values
 sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 1000)
@@ -331,20 +331,11 @@ plt.legend()
 plt.show()
 
 # Scikit
-sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=0, fit_intercept=False, max_iter=200, \
-tol=0.001, shuffle=True, random_state=68, learning_rate='constant', eta0=0.001)
+sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=0, fit_intercept=True, max_iter=500, \
+tol=0.0001, shuffle=True, random_state=68, learning_rate='invscaling', power_t=0.25, eta0=0.0035)
 sgd_scikit.fit(X_train, z_train)
 z_pred_scikit = sgd_scikit.predict(X_test)
 print("Scikit SGDRegressor errors")
 print(mean_squared_error(z_test, z_pred_scikit))
 print(r2_score(z_test, z_pred_scikit))
-
-
-epochs = [20,50,100,200,500,1000,2000,3000]
-for i in range(len(epochs)):
-    sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=0, fit_intercept=False, max_iter=epochs[i], \
-    tol=0.001, shuffle=True, random_state=68, learning_rate='constant', eta0=0.002)
-    sgd_scikit.fit(X_train, z_train)
-    z_pred_scikit = sgd_scikit.predict(X_train)
-    print(mean_squared_error(z_train, z_pred_scikit))
 """

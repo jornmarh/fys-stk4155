@@ -8,6 +8,7 @@ from sklearn.neural_network import MLPRegressor
 import pandas as pd
 import seaborn as sns
 from sklearn.model_selection import KFold
+from sklearn.model_selection import GridSearchCV
 
 class NN:
     def __init__(self,
@@ -262,63 +263,32 @@ scaler_x = scaler.fit(X_train)  # Scaling x-data
 X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
 
-"""
-# Initialization if CV is used
-z = (FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N))
-X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
-scaler = StandardScaler()
-X = scaler.fit(X).transform(X)
-"""
-# Defining the neural network
+
+# Setting the architecture the neural network
 n_hidden_neurons = 40
 n_hidden_layers = 2
 activation = "Sigmoid"
 initilize = "Xavier"
 
 
-"""
-"""
-# Own dnn vs Scikit
-print("Own dnn")
+# Own nn vs Scikit
+print("Own nn")
 network1 = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "RELU", "He") #Create network
 network1.train(200, 10, 0.0005, 1e-6) #Train
 yPredict = network1.predict(X_test)
 print(mean_squared_error(z_test.reshape(-1,1), yPredict))
 print(r2_score(z_test.reshape(-1,1), yPredict))
-"""
 
-print("Scikit dnn")
-dnn = MLPRegressor(activation='relu', solver='sgd', alpha=1e-6, batch_size=10, learning_rate_init=0.0005, max_iter=200, random_state=64)
+
+print("Scikit nn")
+dnn = MLPRegressor(activation='logistic', solver='sgd', alpha=1e-6, batch_size=10, learning_rate_init=0.0005, max_iter=200, random_state=64)
 dnn.fit(X_train, z_train)
 zPredict = dnn.predict(X_test)
 print(mean_squared_error(z_test, zPredict))
 print(r2_score(z_test, zPredict))
 
 
-# MSE as function of epochs with cross-validation
-cv_split = 0
-k = 5
-mse = np.zeros((k, 100))
-kfold = KFold(n_splits = k, shuffle=True)
-for train_indexes, test_indexes in kfold.split(X):
-        X_train = X[train_indexes]
-        X_test = X[test_indexes]
-        z_train = z[train_indexes]
-        z_test = z[test_indexes]
-
-        network = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
-        network.train(100, 10, 0.001, 1e-8)
-        z_pred = network.predict(X_train)
-        mse[cv_split,:] = network.mse
-
-        cv_split += 1
-
-mse = np.mean(mse,axis=0)
-plt.plot(network.epochs, mse)
-plt.show()
-
-
-# MSE and r^2 as function of epochs
+# MSE and r2_score as function of epochs with sigmoid activation
 nn_sig_xav = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
 nn_sig_xav.train(200, 10, 0.001, 1e-6)
 print("MSE: ",nn_sig_xav.mse[-1])
@@ -339,44 +309,71 @@ plt.title('Test $r^2$ error as function of epochs with Sigmoid activation')
 plt.show()
 
 
-# Same, but old version
-epochs = np.arange(100)
-mse_epochs = np.zeros(len(epochs))
-for i in range(len(epochs)):
-    nn = NN(X_train, z_train, n_hidden_layers, n_hidden_neurons, activation, initilize)
-    nn.train(epochs[i], 10, 0.0001, 1e-7)
-    z_pred_epochs = nn.predict(X_test)
-    mse_epochs[i] = mean_squared_error(z_test,z_pred_epochs)
-    print(mse_epochs[i])
-
-plt.plot(epochs,mse_epochs)
-plt.show()
-
-
 # Gridsearch for eta/lambda
-etas = [0.0001,0.0005,0.001,0.005, 0.01]
-lambdas = [1e-2, 1e-4, 1e-6, 1e-8]
+etas = [0.0001, 0.0005,0.001, 0.005]
+lambdas = [1e-1, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]
+#lambdas = [1e-1, 1e-3, 1e-5, 1e-7, 1e-9]
 
-#mse_grid_train = np.zeros((len(etas),len(lambdas)))
 mse_grid_test = np.zeros((len(etas),len(lambdas)))
+r2_grid_test = np.zeros((len(etas),len(lambdas)))
+mse_grid_test_scikit = np.zeros((len(etas),len(lambdas)))
+r2_grid_test_scikit = np.zeros((len(etas),len(lambdas)))
+
 for i in range(len(etas)):
     for j in range(len(lambdas)):
+        # Own NN
         nn = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, activation, initilize)
         nn.train(200, 10, etas[i], lambdas[j])
-        #z_pred = nn.predict(X_train)
         z_pred_test = nn.predict(X_test)
-        #mse_grid_train[i,j] = mean_squared_error(z_train,z_pred)
-        mse_grid_test[i,j] = mean_squared_error(z_test,z_pred_test)
+
+        mse_grid_test[i,j] = mean_squared_error(z_test, z_pred_test)
+        r2_grid_test[i,j] = r2_score(z_test, z_pred_test)
         print(mse_grid_test[i,j])
 
-#mse_df_train = pd.DataFrame(mse_grid_train, index = etas, columns = lambdas)
+        # Scikit
+        dnn = MLPRegressor(hidden_layer_sizes=(40), activation='logistic', solver='sgd', alpha=lambdas[j], batch_size=10, learning_rate_init=etas[i], max_iter=200, random_state=64)
+        dnn.fit(X_train, z_train)
+        z_pred_scikit = dnn.predict(X_test)
+
+        mse_grid_test_scikit[i,j] = mean_squared_error(z_test,z_pred_scikit)
+        r2_grid_test_scikit[i,j] = r2_score(z_test,z_pred_scikit)
+
+# Own NN mse
 mse_df_test = pd.DataFrame(mse_grid_test, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
-sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.4f')
-ax.set_title("Test error gridsearch")
+sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.3f')
+ax.set_title("Test mse gridsearch")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
+
+# Own NN r2
+r2_df_test = pd.DataFrame(r2_grid_test, index = etas, columns = lambdas)
+fig, ax = plt.subplots(figsize = (7, 7))
+sns.heatmap(r2_df_test, annot=True, ax=ax, cmap="viridis", fmt='.3f')
+ax.set_title("Test $r^2$ error gridsearch")
+ax.set_xlabel("$\lambda$")
+ax.set_ylabel("$\eta$")
+plt.show()
+
+# Scikit mse
+mse_df_test = pd.DataFrame(mse_grid_test_scikit, index = etas, columns = lambdas)
+fig, ax = plt.subplots(figsize = (7, 7))
+sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.3f')
+ax.set_title("Test mse gridsearch")
+ax.set_xlabel("$\lambda$")
+ax.set_ylabel("$\eta$")
+plt.show()
+
+# Scikit r2
+r2_df_test = pd.DataFrame(r2_grid_test_scikit, index = etas, columns = lambdas)
+fig, ax = plt.subplots(figsize = (7, 7))
+sns.heatmap(r2_df_test, annot=True, ax=ax, cmap="viridis", fmt='.3f')
+ax.set_title("Test $r^2$ gridsearch")
+ax.set_xlabel("$\lambda$")
+ax.set_ylabel("$\eta$")
+plt.show()
+
 
 # Gridsearch of neurons and layers
 neurons = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
@@ -388,14 +385,11 @@ for i in range(len(neurons)):
         nn.train(200, 10, 0.0005, 1e-6)
         print("Neurons: ", neurons[i])
         print("Layers: ", layers[j])
-        #z_pred = nn.predict(X_train)
         z_pred_test = nn.predict(X_test)
-        #mse_grid_train[i,j] = mean_squared_error(z_train,z_pred)
         mse_grid_test[i,j] = mean_squared_error(z_test,z_pred_test)
         print(mse_grid_test[i,j])
         print("")
 
-#mse_df_train = pd.DataFrame(mse_grid_train, index = etas, columns = lambdas)
 mse_df_test = pd.DataFrame(mse_grid_test, index = neurons, columns = layers)
 fig, ax = plt.subplots(figsize = (7, 7))
 sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.4f')
@@ -410,8 +404,7 @@ nn_sig_xav = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neur
 nn_sig_rand = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")
 nn_sig_xav.train(200, 10, 0.001, 1e-6)
 nn_sig_rand.train(200, 10, 0.001, 1e-6)
-#print(nn.mse)
-#print(nn.epochs)
+
 print("Lowest mse xav: ",nn_sig_xav.mse[-1])
 print("Lowest mse rand: ",nn_sig_rand.mse[-1])
 plt.plot(nn_sig_xav.epochs,nn_sig_xav.mse, label='Xavier')
@@ -461,8 +454,6 @@ r2_relu = r2_score(z_test, relu_pred)
 r2_lrelu = r2_score(z_test, lrelu_pred)
 r2_elu = r2_score(z_test, elu_pred)
 
-#print(nn.mse)
-#print(nn.epochs)
 print("Lowest mse sigmoid: ",mse_sig)
 print("Lowest mse Relu: ",mse_relu)
 print("Lowest mse lRelu: ",mse_lrelu)
@@ -490,4 +481,3 @@ plt.xlabel('epochs')
 plt.ylabel('$r^2 score$')
 plt.title('$r^2$ score as function of epochs: Comparison of different activations')
 plt.show()
-"""
