@@ -270,7 +270,7 @@ n_hidden_layers = 2
 activation = "Sigmoid"
 initilize = "Xavier"
 
-
+"""
 # Own nn vs Scikit
 print("Own nn")
 network1 = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "RELU", "He") #Create network
@@ -308,10 +308,10 @@ plt.ylabel('$r^2$ error')
 plt.title('Test $r^2$ error as function of epochs with Sigmoid activation')
 plt.show()
 
-
+"""
 # Gridsearch for eta/lambda
-etas = [0.0001, 0.0005,0.001, 0.005]
-lambdas = [1e-1, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]
+etas = [0.0001, 0.0002,0.0003,0.0006,0.001]
+lambdas = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]
 #lambdas = [1e-1, 1e-3, 1e-5, 1e-7, 1e-9]
 
 mse_grid_test = np.zeros((len(etas),len(lambdas)))
@@ -322,12 +322,13 @@ r2_grid_test_scikit = np.zeros((len(etas),len(lambdas)))
 for i in range(len(etas)):
     for j in range(len(lambdas)):
         # Own NN
-        nn = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, activation, initilize)
+        nn = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "RELU", "He")
         nn.train(200, 10, etas[i], lambdas[j])
         z_pred_test = nn.predict(X_test)
 
         mse_grid_test[i,j] = mean_squared_error(z_test, z_pred_test)
         r2_grid_test[i,j] = r2_score(z_test, z_pred_test)
+        print(lambdas[j])
         print(mse_grid_test[i,j])
 
         # Scikit
@@ -373,7 +374,7 @@ ax.set_title("Test $r^2$ gridsearch")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
-
+"""
 
 # Gridsearch of neurons and layers
 neurons = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
@@ -481,3 +482,4 @@ plt.xlabel('epochs')
 plt.ylabel('$r^2 score$')
 plt.title('$r^2$ score as function of epochs: Comparison of different activations')
 plt.show()
+"""

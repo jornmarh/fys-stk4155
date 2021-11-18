@@ -183,10 +183,10 @@ class Sdg:
 
                 self.ytilde_sgd_ridge = self.X_test @ theta
                 mse_sgd_ridge = mean_squared_error(self.y_test, self.ytilde_sgd_ridge)
-                r2_sgd_ridge = r2_score(self.y_test, self.ytilde_sgd_ols)
+                r2_sgd_ridge = r2_score(self.y_test, self.ytilde_sgd_ridge)
                 self.epochs.append(epoch)
-                self.mse.append(mse_sgd_ols)
-                self.r2.append(r2_sgd_ols)
+                self.mse.append(mse_sgd_ridge)
+                self.r2.append(r2_sgd_ridge)
                 print(mse_sgd_ridge)
                 return mse_sgd_ridge, r2_sgd_ridge
 
@@ -207,10 +207,10 @@ class Sdg:
 
             self.ytilde_sgd_ridge = self.X_test @ theta
             mse_sgd_ridge = mean_squared_error(self.y_test, self.ytilde_sgd_ridge)
-            r2_sgd_ridge = r2_score(self.y_test, self.ytilde_sgd_ols)
+            r2_sgd_ridge = r2_score(self.y_test, self.ytilde_sgd_ridge)
             self.epochs.append(epoch)
-            self.mse.append(mse_sgd_ols)
-            self.r2.append(r2_sgd_ols)
+            self.mse.append(mse_sgd_ridge)
+            self.r2.append(r2_sgd_ridge)
             print(mse_sgd_ridge)
             return mse_sgd_ridge, r2_sgd_ridge
 

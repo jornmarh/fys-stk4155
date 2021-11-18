@@ -47,13 +47,13 @@ print("OLS errors")
 print(mean_squared_error(z_test, ytilde_ols))
 print(r2_score(z_test, ytilde_ols))
 print("")
-"""
+
 model_ridge = Ridge(alpha=1e-7).fit(X_train, z_train)
 ytilde_ridge = model_ridge.predict(X_test)
 print("Ridge errors")
 print(mean_squared_error(z_test, ytilde_ridge))
 print(r2_score(z_test, ytilde_ridge))
-"""
+
 
 # For testing single values
 sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 1000)
@@ -226,68 +226,96 @@ plt.show()
 print("Errors with RMS-prop")
 print("MSE: ", mse)
 print("$r^2$: ", r2)
-
-# Gridsearch for eta and gamma
-etas = [0.005,0.01,0.015,0.02,0.025, 0.03]
+"""
+# Gridsearch for eta and gamma/beta for use with momentum and rms-prop. Used for both OLS and Ridge
+etas = [0.005,0.01,0.015,0.02,0.025, 0.03] # rmsprop
+#etas = [0.0001,0.0005,0.001,0.0015,0.002, 0.0025, 0.003] # momentum constant learning rate
 betas = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
 mse = np.zeros((len(etas), len(betas)))
 r2 = np.zeros((len(etas), len(betas)))
 for i in range(len(etas)):
     for j in range(len(betas)):
         sgdreg = Sdg(X_train, X_test, z_train, z_test, etas[i], 10, 500)
-        mse[i,j], r2[i,j] = sgdreg.stocastichGD_ols(algo="rmsprop", beta=betas[j])
+        print("")
+        print(etas[i])
+        print(betas[j])
+        mse[i,j], r2[i,j] = sgdreg.stocastichGD_ridge(0.01, algo="rmsprop", beta=betas[j], schedule=False)
         print(mse[i,j])
 
 mse_df_test = pd.DataFrame(mse, index = etas, columns = betas)
-fig, ax = plt.subplots(figsize = (9, 9))
+fig, ax = plt.subplots(figsize = (8, 8))
 sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.3f')
-ax.set_title("Gridsearch showing mse")
-ax.set_xlabel("$beta$")
+ax.set_title("SGD RMS-prop ridge mse gridsearch")
+ax.set_xlabel("beta")
 ax.set_ylabel("$\eta$")
 plt.show()
 
 mse_df_test = pd.DataFrame(r2, index = etas, columns = betas)
-fig, ax = plt.subplots(figsize = (9, 9))
+fig, ax = plt.subplots(figsize = (8, 8))
 sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis", fmt='.3f')
-ax.set_title("Gridsearch showing $r^2$ error")
-ax.set_xlabel("$beta$")
+ax.set_title("SGD RMS-prop ridge $r^2$ score gridsearch")
+ax.set_xlabel("beta")
 ax.set_ylabel("$\eta$")
 plt.show()
+"""
 
 '''--------------------------------------------------
                 # RIDGE REGRESSION
 ---------------------------------------------------'''
 
 
-# regular SGD ridge gridsearch
+# SGD ridge gridsearch for eta/lambda
 print('Regular SGD ridge gridsearch')
-epochs = 500
-M = 10
 lambdas = np.logspace(-8,0,9)
 etas = [0.0001,0.0005,0.001,0.0015,0.002,0.0025,0.0030]
 mse_gridsearch = np.zeros((len(etas), len(lambdas)))
 r2_gridsearch = np.zeros((len(etas), len(lambdas)))
+mse_scikit = np.zeros((len(etas), len(lambdas)))
+r2_scikit = np.zeros((len(etas), len(lambdas)))
 #sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, M, epochs)
 #sgdreg.stocastichGD_ridge(0)
 
 for i in range(len(etas)):
     for j in range(len(lambdas)):
-        sgdreg = Sdg(X_train, X_test, z_train, z_test, etas[i], M, epochs)
-        mse_gridsearch[i,j], r2_gridsearch[i,j] = sgdreg.stocastichGD_ridge(lambdas[j])
+        sgdreg = Sdg(X_train, X_test, z_train, z_test, etas[i], 10, 500)
+        mse_gridsearch[i,j], r2_gridsearch[i,j] = sgdreg.stocastichGD_ridge(lambdas[j], schedule=False)
 
-# Plot gridsearch
+        sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=lambdas[j], fit_intercept=True, max_iter=500, \
+        tol=0.0001, shuffle=True, random_state=68, learning_rate='invscaling', power_t=0.25, eta0=etas[i])
+        sgd_scikit.fit(X_train, z_train)
+        z_pred_scikit = sgd_scikit.predict(X_test)
+        mse_scikit[i,j] = mean_squared_error(z_test, z_pred_scikit)
+        r2_scikit[i,j] = r2_score(z_test, z_pred_scikit)
+
+# Own SGD
 mse_dataframe = pd.DataFrame(mse_gridsearch, index = etas, columns = lambdas)
-fig, ax = plt.subplots(figsize = (9, 9))
+fig, ax = plt.subplots(figsize = (8, 8))
 sns.heatmap(mse_dataframe, annot=True, ax=ax, cmap="viridis_r", fmt='.3f')
-ax.set_title("Test mse for gridsearch of $\eta$ and $\lambda$")
+ax.set_title("Own SGD ridge mse gridsearch")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
 
-mse_dataframe = pd.DataFrame(r2_gridsearch, index = etas, columns = lambdas)
-fig, ax = plt.subplots(figsize = (9, 9))
-sns.heatmap(mse_dataframe, annot=True, ax=ax, cmap="viridis", fmt='.3f')
-ax.set_title("Test $r^2$ error for gridsearch of $\eta$ and $\lambda$")
+r2_dataframe = pd.DataFrame(r2_gridsearch, index = etas, columns = lambdas)
+fig, ax = plt.subplots(figsize = (8, 8))
+sns.heatmap(r2_dataframe, annot=True, ax=ax, cmap="viridis", fmt='.3f')
+ax.set_title("Own SGD ridge $r^2$ score gridsearch")
+ax.set_xlabel("$\lambda$")
+ax.set_ylabel("$\eta$")
+plt.show()
+
+mse_dataframe_scikit = pd.DataFrame(mse_scikit, index = etas, columns = lambdas)
+fig, ax = plt.subplots(figsize = (8, 8))
+sns.heatmap(mse_dataframe_scikit, annot=True, ax=ax, cmap="viridis_r", fmt='.3f')
+ax.set_title("Scikit SGD ridge mse gridsearch")
+ax.set_xlabel("$\lambda$")
+ax.set_ylabel("$\eta$")
+plt.show()
+
+r2_dataframe_scikit = pd.DataFrame(r2_scikit, index = etas, columns = lambdas)
+fig, ax = plt.subplots(figsize = (8, 8))
+sns.heatmap(r2_dataframe_scikit, annot=True, ax=ax, cmap="viridis", fmt='.3f')
+ax.set_title("Scikit SGD ridge $r^2$ score gridsearch")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
