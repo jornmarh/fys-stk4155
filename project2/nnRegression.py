@@ -309,11 +309,12 @@ plt.title('Test $r^2$ error as function of epochs with Sigmoid activation')
 plt.show()
 
 """
-# Gridsearch for eta/lambda
-etas = [0.0001, 0.0002,0.0003,0.0006,0.001,0.005]
-etas = [0.0001,0.0005,0.001,0.005]
+# Gridsearch for eta/lambda. Used for all activation functions
+etas = [0.0001,0.0005,0.001,0.005] # For sigmoid
+etas = [0.005,0.001,0.005,0.01,0.05,0.1] # optimal For scikit
+#etas = [0.0001,0.0003, 0.0005, 0.0007, 0.0009, 0.001] # For relu, lrelu and elu (overflow if lr too high)
 lambdas = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]
-#lambdas = [1e-1, 1e-3, 1e-5, 1e-7, 1e-9]
+
 
 mse_grid_test = np.zeros((len(etas),len(lambdas)))
 r2_grid_test = np.zeros((len(etas),len(lambdas)))
@@ -323,28 +324,29 @@ r2_grid_test_scikit = np.zeros((len(etas),len(lambdas)))
 for i in range(len(etas)):
     for j in range(len(lambdas)):
         # Own NN
-        nn = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
-        nn.train(200, 10, etas[i], lambdas[j])
-        z_pred_test = nn.predict(X_train)
+        #nn = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+        #nn.train(200, 10, etas[i], lambdas[j])
+        #z_pred_test = nn.predict(X_test)
 
-        mse_grid_test[i,j] = mean_squared_error(z_train, z_pred_test)
-        r2_grid_test[i,j] = r2_score(z_train, z_pred_test)
-        print(lambdas[j])
-        print(mse_grid_test[i,j])
+        #mse_grid_test[i,j] = mean_squared_error(z_test, z_pred_test)
+        #r2_grid_test[i,j] = r2_score(z_test, z_pred_test)
+        print(etas[i])
+        #print(mse_grid_test[i,j])
 
         # Scikit
         dnn = MLPRegressor(hidden_layer_sizes=(40), activation='logistic', solver='sgd', alpha=lambdas[j], batch_size=10, learning_rate_init=etas[i], max_iter=200, random_state=64)
         dnn.fit(X_train, z_train)
-        z_pred_scikit = dnn.predict(X_train)
+        z_pred_scikit = dnn.predict(X_test)
 
-        mse_grid_test_scikit[i,j] = mean_squared_error(z_train,z_pred_scikit)
-        r2_grid_test_scikit[i,j] = r2_score(z_train,z_pred_scikit)
+        mse_grid_test_scikit[i,j] = mean_squared_error(z_test,z_pred_scikit)
+        r2_grid_test_scikit[i,j] = r2_score(z_test,z_pred_scikit)
 
+"""
 # Own NN mse
 mse_df_test = pd.DataFrame(mse_grid_test, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
 sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.3f')
-ax.set_title("Train mse gridsearch")
+ax.set_title("Test mse gridsearch for Leaky relu activation")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
@@ -353,16 +355,16 @@ plt.show()
 r2_df_test = pd.DataFrame(r2_grid_test, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
 sns.heatmap(r2_df_test, annot=True, ax=ax, cmap="viridis", fmt='.3f')
-ax.set_title("Train $r^2$ error gridsearch")
+ax.set_title("Test $r^2$ error gridsearch for Leaky relu activation")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
-
+"""
 # Scikit mse
 mse_df_test = pd.DataFrame(mse_grid_test_scikit, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
 sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.3f')
-ax.set_title("Test mse gridsearch")
+ax.set_title("Scikit test mse gridsearch for Sigmoid activation")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
@@ -371,12 +373,12 @@ plt.show()
 r2_df_test = pd.DataFrame(r2_grid_test_scikit, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
 sns.heatmap(r2_df_test, annot=True, ax=ax, cmap="viridis", fmt='.3f')
-ax.set_title("Test $r^2$ gridsearch")
+ax.set_title("Scikit test $r^2$ gridsearch for Sigmoid activation")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
-"""
 
+"""
 # Gridsearch of neurons and layers
 neurons = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 layers = [1, 2, 3, 4]
