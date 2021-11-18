@@ -359,11 +359,12 @@ plt.legend()
 plt.show()
 
 # Scikit
-sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=0, fit_intercept=True, max_iter=500, \
+sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=0.01, fit_intercept=True, max_iter=500, \
 tol=0.0001, shuffle=True, random_state=68, learning_rate='invscaling', power_t=0.25, eta0=0.0035)
 sgd_scikit.fit(X_train, z_train)
 z_pred_scikit = sgd_scikit.predict(X_test)
 print("Scikit SGDRegressor errors")
 print(mean_squared_error(z_test, z_pred_scikit))
 print(r2_score(z_test, z_pred_scikit))
+
 """
