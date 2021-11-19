@@ -2,7 +2,7 @@ from sklearn.datasets import load_breast_cancer
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
 
@@ -43,14 +43,15 @@ def sgd_logreg(X_train, y_train):
     n = X_train.shape[1]
     n_epochs = 200
     M = 10
-    lmd = 0
+    lmd = 1e-1
+    eta = 1e-2
     weights = np.random.randn(n)
     for i in range(n_epochs):
         mini_batches = create_miniBatches(X_train, y_train, M)
         for mini_batch in mini_batches:
             xi, yi = mini_batch
             gradient = -xi.T @ (yi - sigmoid(xi@weights)) + lmd*weights
-            weights -= gradient
+            weights -= eta*gradient
     return weights
 
 
@@ -75,10 +76,11 @@ for train_indexes, test_indexes in kfold.split(X):
 
     acc_own = accuracy_score(t_test, predict(X_test, sgd_logreg(X_train, t_train))); print('Own:     split: {}, score: {}'.format(cv_split, acc_own))
 
-    logreg = LogisticRegression(penalty = 'l2', max_iter = 200)
-    logreg.fit(X_train, t_train)
-    scikit_pred = logreg.predict(X_test)
-    acc_scikit = accuracy_score(t_test, scikit_pred); print('Scikit:    split: {}, score: {}'.format(cv_split, acc_scikit))
+    clf = SGDClassifier(loss='log', penalty='l2', max_iter=200)
+    clf.fit(X_train, t_train)
+    predict_scikit = clf.predict(X_test)
+    acc_scikit = accuracy_score(t_test, predict_scikit)
+
 
     scores_scikit[cv_split] = acc_scikit
     scores_own[cv_split] = acc_own
