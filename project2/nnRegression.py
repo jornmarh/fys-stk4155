@@ -271,7 +271,7 @@ n_hidden_layers = 2
 activation = "Sigmoid"
 initilize = "Xavier"
 
-
+"""
 
 # Own nn vs Scikit
 print("Own nn")
@@ -313,7 +313,7 @@ plt.title('Test $r^2$ error as function of epochs with Sigmoid activation')
 plt.show()
 
 
-
+"""
 # Gridsearch for eta/lambda. Used for all activation functions
 
 etas = [0.0001,0.0005,0.001,0.005] # Used for sigmoid
@@ -330,14 +330,14 @@ r2_grid_test_scikit = np.zeros((len(etas),len(lambdas)))
 for i in range(len(etas)):
     for j in range(len(lambdas)):
         # Own NN
-        nn = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
-        nn.train(200, 10, etas[i], lambdas[j])
-        z_pred_test = nn.predict(X_train)
+        #nn = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
+        #nn.train(200, 10, etas[i], lambdas[j])
+        #z_pred_test = nn.predict(X_train)
 
-        mse_grid_test[i,j] = mean_squared_error(z_train, z_pred_test)
-        r2_grid_test[i,j] = r2_score(z_train, z_pred_test)
-        print(etas[i])
-        print(mse_grid_test[i,j])
+        #mse_grid_test[i,j] = mean_squared_error(z_train, z_pred_test)
+        #r2_grid_test[i,j] = r2_score(z_train, z_pred_test)
+        #print(etas[i])
+        #print(mse_grid_test[i,j])
 
         # Scikit
         dnn = MLPRegressor(hidden_layer_sizes=(40), activation='logistic', solver='sgd', alpha=lambdas[j], batch_size=10, learning_rate_init=etas[i], max_iter=200, random_state=64)
@@ -347,7 +347,7 @@ for i in range(len(etas)):
         mse_grid_test_scikit[i,j] = mean_squared_error(z_test,z_pred_scikit)
         r2_grid_test_scikit[i,j] = r2_score(z_test,z_pred_scikit)
 
-
+"""
 # Own NN mse
 mse_df_test = pd.DataFrame(mse_grid_test, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
@@ -365,12 +365,12 @@ ax.set_title("Train $r^2$ error gridsearch for Sigmoid activation")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
-
+"""
 # Scikit mse
 mse_df_test = pd.DataFrame(mse_grid_test_scikit, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
 sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.3f')
-ax.set_title("Scikit test mse gridsearch for Sigmoid activation")
+ax.set_title("Scikit train mse gridsearch for Sigmoid activation")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
@@ -379,11 +379,11 @@ plt.show()
 r2_df_test = pd.DataFrame(r2_grid_test_scikit, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
 sns.heatmap(r2_df_test, annot=True, ax=ax, cmap="viridis", fmt='.3f')
-ax.set_title("Scikit test $r^2$ gridsearch for Sigmoid activation")
+ax.set_title("Scikit train $r^2$ gridsearch for Sigmoid activation")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
-
+"""
 
 
 # Comparison of Xavier and Random initialisation with Sigmoid activation
@@ -496,3 +496,4 @@ ax.set_title("Test error gridsearch")
 ax.set_xlabel("layers")
 ax.set_ylabel("neurons")
 plt.show()
+"""
