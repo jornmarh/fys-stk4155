@@ -1,4 +1,6 @@
-'''Test file '''
+
+copy and paste to plot data.
+My apologies for the messy format!
 
 ------------------------------------------------------------------------------
         BAR GRAPH DATA
@@ -69,55 +71,6 @@ plt.legend(labels=['RELU', 'Sigmoid'])
 plt.title("Comparrison of Original, scaled and dimension reduced data")
 plt.show()
 
---------------------------------------------------------------------------------
-                    BAR GRAPH NUMBER OF NODES 1 HIDDEN LAYER
---------------------------------------------------------------------------------
-#CVD
-cv_split = 0
-k = 10
-score_own = np.zeros(k)
-score_scikit = np.zeros(k)
-kfold = KFold(n_splits = k, shuffle=True)
-
-neurons = np.arange(20,220, 40)
-neuron_score_own = np.zeros(len(neurons))
-neuron_score_scikit = np.zeros(len(neurons))
-i = 0
-for n_hidden_neurons in neurons:
-    for train_indexes, test_indexes in kfold.split(X):
-            X_train = X[train_indexes]
-            X_test = X[test_indexes]
-            t_train = targets[train_indexes]
-            t_test = targets[test_indexes]
-
-            network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)
-            network1.train(100, 10, 1e-2, 1e-7)
-            pred = network1.predict(X_test)
-            acs_own = accuracy_score(t_test, pred)
-
-            clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=100, hidden_layer_sizes=(n_hidden_neurons), batch_size=10, alpha=1e-7, learning_rate_init=1e-2)
-            clf.fit(X_train, t_train)
-            t_predict = clf.predict(X_test)
-            acs_scikit = accuracy_score(t_test, t_predict)
-
-            score_own[cv_split] = acs_own
-            score_scikit[cv_split] = acs_scikit
-            cv_split += 1
-    cv_split = 0
-    print("done")
-    accuracy_own = np.mean(score_own)
-    accuracy_scikit = np.mean(score_scikit)
-    neuron_score_own[i] = accuracy_own
-    neuron_score_scikit[i] = accuracy_scikit
-    i+=1
-
-plt.plot(neurons, neuron_score_own, label='own')
-plt.plot(neurons, neuron_score_scikit, label='scikit')
-plt.legend()
-plt.title("Accuracy score for number of hidden neurons with 1 hidden layer")
-plt.ylabel("Accuracy score")
-plt.xlabel("Number of neurons")
-plt.show()
 
 --------------------------------------------------------------------------------
                               Epochs test of etas

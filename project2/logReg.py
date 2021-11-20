@@ -1,3 +1,8 @@
+'''
+Code for logistic regression
+'''
+
+
 from sklearn.datasets import load_breast_cancer
 import numpy as np
 import matplotlib.pyplot as plt
