@@ -41,6 +41,7 @@ X_train, X_test, z_train, z_test = input.format()
                 # OLS REGRESSION
 ---------------------------------------------------'''
 """
+"""
 model_ols = LinearRegression().fit(X_train, z_train)
 ytilde_ols = model_ols.predict(X_test)
 print("OLS errors")
@@ -53,7 +54,7 @@ ytilde_ridge = model_ridge.predict(X_test)
 print("Ridge errors")
 print(mean_squared_error(z_test, ytilde_ridge))
 print(r2_score(z_test, ytilde_ridge))
-
+"""
 
 # For testing single values
 sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 1000)
@@ -226,7 +227,7 @@ plt.show()
 print("Errors with RMS-prop")
 print("MSE: ", mse)
 print("$r^2$: ", r2)
-"""
+
 # Gridsearch for eta and gamma/beta for use with momentum and rms-prop. Used for both OLS and Ridge
 etas = [0.005,0.01,0.015,0.02,0.025, 0.03] # rmsprop
 #etas = [0.0001,0.0005,0.001,0.0015,0.002, 0.0025, 0.003] # momentum constant learning rate
@@ -257,7 +258,7 @@ ax.set_title("SGD RMS-prop ridge $r^2$ score gridsearch")
 ax.set_xlabel("beta")
 ax.set_ylabel("$\eta$")
 plt.show()
-"""
+
 
 '''--------------------------------------------------
                 # RIDGE REGRESSION
