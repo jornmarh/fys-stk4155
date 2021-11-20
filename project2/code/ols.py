@@ -1,3 +1,8 @@
+'''
+Code we used to obtain ols and ridge results of the franke-functio to compare
+with our neural network code.
+'''
+
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score

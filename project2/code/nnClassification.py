@@ -1,3 +1,9 @@
+'''
+Neural network for classification of the Wisconsin breast-cancer data.
+Apply the section label "test network" to run simple tests without cross validation
+or grid-search.
+'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 from module1 import Sdg, Franke
@@ -233,6 +239,10 @@ n_hidden_layers = 1
 activation = "RELU"
 initialization = "He"
 
+'''-----------------------------------------------------------------------------
+                                Grid-Search
+-----------------------------------------------------------------------------'''
+
 n_epochs = 200
 M = 10
 etas = [1e-4, 1e-3, 1e-2, 5e-2]
@@ -267,43 +277,52 @@ for eta in etas:
             network1 = NN(X_train, X_test, t_train, t_test, n_hidden_layers, n_hidden_neurons, activation, initialization)
             network1.train(n_epochs, M, eta, lmd)
 
+            #Predict X_test
             pred = network1.predict(X_test)
             acs_own = accuracy_score(t_test, pred)
             score_own_cvd[cv_split] = acs_own
 
+            #Predict X_train
             #pred_train = network1.predict(X_train)
             #acs_own_train = accuracy_score(t_train, pred_train)
             #score_own_train_cvd[cv_split] = acs_own_train
 
+            #Scikit-learn
             #clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=lmd, learning_rate_init=eta)
             #clf.fit(X_train, t_train)
 
+            #Scikit-learn test
             #t_predict = clf.predict(X_test)
             #acs_scikit = accuracy_score(t_test, t_predict)
             #score_scikit_cvd[cv_split] = acs_scikit
 
+            #SCikit-learn train
             #t_predict_train = clf.predict(X_train)
             #acs_scikit_train = accuracy_score(t_train, t_predict_train)
             #score_scikit_train_cvd[cv_split] = acs_scikit_train
 
             cv_split += 1
 
+        #Own test
         accuracy_own = np.mean(score_own_cvd); print("eta, lambda: ({}, {}): Own DNN test: {}".format(eta,lmd,accuracy_own))
         acc_grid_own[i][j] = accuracy_own
 
+        #Own train
         #accuracy_own_train = np.mean(score_own_train_cvd); print("itr ({}, {}): Own DNN train: {}".format(i,j,accuracy_own_train))
         #acc_grid_own_train[i][j] = accuracy_own_train
 
+        #scikit test
         #accuracy_scikit = np.mean(score_scikit_cvd); print("itr ({}, {}): Scikit DNN: {}".format(i,j,accuracy_scikit))
         #acc_grid_scikit[i][j] = accuracy_scikit
 
+        #scikit train
         accuracy_scikit_train = np.mean(score_scikit_train_cvd); print("itr ({}, {}): Scikit DNN train: {}".format(i,j,accuracy_scikit_train))
         acc_grid_scikit_train[i][j] = accuracy_scikit_train
 
 
         j+= 1
     i += 1
-test = pd.DataFrame(acc_grid_own, index = etas, columns = lambdas)
+test = pd.DataFrame(acc_grid_own, index = etas, columns = lambdas) #change acc_grid_own to plot other data
 fig, ax = plt.subplots()
 sns.heatmap(test, annot=True, ax=ax, cmap='viridis', fmt='.4f', vmax=0.98, vmin=0.90)
 ax.set_title('Test data accuracy score')
@@ -319,7 +338,7 @@ plt.show()
 
 #Neural network
 '''
-network1 = NN(X_train, t_train, n_hidden_layers, n_hidden_neurons, activation, initialization)  # Create network, printGrad=True prints the gradients for every epoch
+network1 = NN(X_train, X_test, t_train, t_test, n_hidden_layers, n_hidden_neurons, activation, initialization)  # Create network, printGrad=True prints the gradients for every epoch
 network1.train(200, 10, 0.1, 0.000001) #Train network, epochsm batch_size, eta, lambda
 pred = network1.predict(X_test) #Predict on new data
 acs = accuracy_score(t_test, pred))  # Evalute model
