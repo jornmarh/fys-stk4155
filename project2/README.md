@@ -14,4 +14,4 @@ In the folder code you will find the following files:
 
 In the figures/ folder we have 4 subdirectories logReg/, nnClassification/, nnRegression/ and SGD corresponding to the different calculations of this project.
 
-The main report for this project is called project2report.pdf
+The main report for this project is called project_2_report.pdf
