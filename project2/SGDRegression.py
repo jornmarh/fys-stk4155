@@ -12,7 +12,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 sns.set()
 
-
+# OLS and Ridge regression from project 1
 def ols_regression(X_train, y_train):
     beta = np.linalg.pinv(X_train.T @ X_train) @ X_train.T @ y_train
     ytilde= X_train @ beta
@@ -40,8 +40,8 @@ X_train, X_test, z_train, z_test = input.format()
 '''--------------------------------------------------
                 # OLS REGRESSION
 ---------------------------------------------------'''
-"""
-"""
+
+# Scikit OLS and Ridge regression analytic
 model_ols = LinearRegression().fit(X_train, z_train)
 ytilde_ols = model_ols.predict(X_test)
 print("OLS errors")
@@ -54,10 +54,10 @@ ytilde_ridge = model_ridge.predict(X_test)
 print("Ridge errors")
 print(mean_squared_error(z_test, ytilde_ridge))
 print(r2_score(z_test, ytilde_ridge))
-"""
+
 
 # For testing single values
-sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 5, 1000)
+sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, 10, 500)
 print(sgdreg.stocastichGD_ols())
 
 
@@ -106,10 +106,8 @@ plt.show()
 
 
 
-print("mse after 200 epochs: ", sgdreg3.mse[199])
-
-
 # gridsearch for batch size vs learning rate
+
 print('gridsearch for batch size vs learning rate')
 batch_sizes = [4,6,8,10,12,14,16]
 etas = [0.0001,0.0005, 0.001, 0.0015, 0.002, 0.0022]
@@ -146,9 +144,11 @@ ax.set_ylabel("batch_size")
 plt.show()
 
 
+
 # SGD with learning learning schedule
+
 print('SGD with learning learning schedule')
-eta = 0.0035
+eta = 0.004
 epochs = 500
 M = 10
 decay = 1e-6
@@ -173,13 +173,14 @@ plt.title("$r^2$ as function of epochs using SGD with learning schedule")
 plt.show()
 
 
+
 #SGD with momentum
+
 print('SGD with momentum')
 eta = 0.003
-epochs = 500
 gamma = 0.6
 
-sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, 10, epochs)
+sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, M, epochs)
 mse, r2 = sgdreg.stocastichGD_ols('momentum', gamma=gamma, schedule=True)
 
 plt.plot(sgdreg.epochs, sgdreg.mse, label=" $\gamma = %.1f$\n $\eta = %.3f$" %(gamma, eta))
@@ -199,17 +200,17 @@ print("MSE: ", mse)
 print("$r^2$: ", r2)
 
 
+
 # RMS-prop
+
 print('SGD with RMS-prop')
 
 eta = 0.01
-epochs = 500
-M = 10
 beta = 0.5
 decay = 1e-6
 
 sgdreg = Sdg(X_train, X_test, z_train, z_test, eta, M, epochs)
-mse, r2 = sgdreg.stocastichGD_ols('rmsprop', beta=beta, schedule=True, decay=decay)
+mse, r2 = sgdreg.stocastichGD_ols('rmsprop', beta=beta, schedule=False)
 print(mse,r2)
 
 plt.plot(sgdreg.epochs, sgdreg.mse, label=" beta = %.1f\n $\eta = %.3f$" %(beta, eta))
@@ -228,7 +229,10 @@ print("Errors with RMS-prop")
 print("MSE: ", mse)
 print("$r^2$: ", r2)
 
-# Gridsearch for eta and gamma/beta for use with momentum and rms-prop. Used for both OLS and Ridge
+
+
+# Gridsearch for eta and gamma/beta for use with momentum and rms-prop. Used for both OLS and Ridge by changing the function
+
 etas = [0.005,0.01,0.015,0.02,0.025, 0.03] # rmsprop
 #etas = [0.0001,0.0005,0.001,0.0015,0.002, 0.0025, 0.003] # momentum constant learning rate
 betas = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
@@ -266,6 +270,7 @@ plt.show()
 
 
 # SGD ridge gridsearch for eta/lambda
+
 print('Regular SGD ridge gridsearch')
 lambdas = np.logspace(-8,0,9)
 etas = [0.0001,0.0005,0.001,0.0015,0.002,0.0025,0.0030]
@@ -273,8 +278,6 @@ mse_gridsearch = np.zeros((len(etas), len(lambdas)))
 r2_gridsearch = np.zeros((len(etas), len(lambdas)))
 mse_scikit = np.zeros((len(etas), len(lambdas)))
 r2_scikit = np.zeros((len(etas), len(lambdas)))
-#sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.001, M, epochs)
-#sgdreg.stocastichGD_ridge(0)
 
 for i in range(len(etas)):
     for j in range(len(lambdas)):
@@ -305,6 +308,7 @@ ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
 
+# Scikit
 mse_dataframe_scikit = pd.DataFrame(mse_scikit, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (8, 8))
 sns.heatmap(mse_dataframe_scikit, annot=True, ax=ax, cmap="viridis_r", fmt='.3f')
@@ -322,44 +326,9 @@ ax.set_ylabel("$\eta$")
 plt.show()
 
 
-# SGD ridge learning schedule
-sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.002, 10, 500)
-print(sgdreg.stocastichGD_ridge(1e-5, schedule=False))
 
-# SGD ridge momentum
-sgdreg = Sdg(X_train, X_test, z_train, z_test, 0.0023, 5, 100)
-sgdreg.stocastichGD_ridge(1e-8, 'momentum',gamma=0.5)
+# Scikit's SGDRegressor
 
-print('MSE as function of epochs with different algorithms')
-epoch_nums = np.arange(100)
-batch_size = 5
-mse_normal = np.zeros(len(epoch_nums))
-mse_schedule = np.zeros(len(epoch_nums))
-mse_momentum = np.zeros(len(epoch_nums))
-mse_rmsprop = np.zeros(len(epoch_nums))
-
-for i in range(len(epoch_nums)):
-    sgdreg_normal = Sdg(X_train, X_test, z_train, z_test, 0.001, batch_size, epoch_nums[i])
-    sgdreg_schedule = Sdg(X_train, X_test, z_train, z_test, 0.01, batch_size, epoch_nums[i])
-    sgdreg_momentum = Sdg(X_train, X_test, z_train, z_test, 0.0015, batch_size, epoch_nums[i])
-    sgdreg_rmsprop = Sdg(X_train, X_test, z_train, z_test, 0.01, batch_size, epoch_nums[i])
-    mse_normal[i] = sgdreg_normal.stocastichGD_ols()
-    mse_schedule[i] = sgdreg_schedule.stocastichGD_ols(schedule=True)
-    mse_momentum[i] = sgdreg_momentum.stocastichGD_ols('momentum')
-    mse_rmsprop[i] = sgdreg_rmsprop.stocastichGD_ols('rmsprop')
-
-plt.plot(epoch_nums, mse_normal, label='Regular SGD')
-plt.plot(epoch_nums, mse_schedule, label='With schedule')
-plt.plot(epoch_nums, mse_momentum, label='With momentum')
-plt.plot(epoch_nums, mse_rmsprop, label='With RMS-prop')
-plt.title('MSE as function of the number of epochs with different algorithms')
-plt.xlabel('Number of epochs')
-plt.ylabel('MSE')
-plt.ylim(0,1)
-plt.legend()
-plt.show()
-
-# Scikit
 sgd_scikit = SGDRegressor(loss='squared_loss', penalty='l2', alpha=0.01, fit_intercept=True, max_iter=500, \
 tol=0.0001, shuffle=True, random_state=68, learning_rate='invscaling', power_t=0.25, eta0=0.0035)
 sgd_scikit.fit(X_train, z_train)
@@ -367,5 +336,3 @@ z_pred_scikit = sgd_scikit.predict(X_test)
 print("Scikit SGDRegressor errors")
 print(mean_squared_error(z_test, z_pred_scikit))
 print(r2_score(z_test, z_pred_scikit))
-
-"""

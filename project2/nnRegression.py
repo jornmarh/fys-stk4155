@@ -218,7 +218,6 @@ class NN:
             self.mse.append(mse)
             self.r2.append(r2)
             i += 1
-            #print(i)
 
     def predict(self, X): #Function for predicting a binary classification set
         y = self.feed_forward_predict(X);
@@ -246,6 +245,8 @@ def create_X(x, y, n):
             X[:, q+k] = (x**(i-k))*(y**k)
     return X
 
+
+
 #Initilize data
 np.random.seed(64)
 N = 20
@@ -256,7 +257,6 @@ xflat = np.ravel(xmesh); yflat = np.ravel(ymesh)
 
 z = (FrankeFunction(xflat, yflat) + 0.15*np.random.randn(N*N))
 X = np.hstack((xflat.reshape(-1,1), yflat.reshape(-1,1)))
-#X = create_X(xflat, yflat, 6)
 X_train, X_test, z_train, z_test = train_test_split(X,z, test_size=0.2)
 scaler = StandardScaler()  # Utilizing scikit's standardscaler
 scaler_x = scaler.fit(X_train)  # Scaling x-data
@@ -264,13 +264,15 @@ X_train = scaler_x.transform(X_train)
 X_test = scaler_x.transform(X_test)
 
 
-# Setting the architecture the neural network
+
+# Setting the architecture of the neural network
 n_hidden_neurons = 40
 n_hidden_layers = 2
 activation = "Sigmoid"
 initilize = "Xavier"
 
-"""
+
+
 # Own nn vs Scikit
 print("Own nn")
 network1 = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "RELU", "He") #Create network
@@ -288,7 +290,9 @@ print(mean_squared_error(z_test, zPredict))
 print(r2_score(z_test, zPredict))
 
 
+
 # MSE and r2_score as function of epochs with sigmoid activation
+
 nn_sig_xav = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
 nn_sig_xav.train(200, 10, 0.001, 1e-6)
 print("MSE: ",nn_sig_xav.mse[-1])
@@ -308,11 +312,13 @@ plt.ylabel('$r^2$ error')
 plt.title('Test $r^2$ error as function of epochs with Sigmoid activation')
 plt.show()
 
-"""
+
+
 # Gridsearch for eta/lambda. Used for all activation functions
-etas = [0.0001,0.0005,0.001,0.005] # For sigmoid
-#etas = [0.005,0.001,0.005,0.01,0.05,0.1] # optimal For scikit
-#etas = [0.0001,0.0003, 0.0005, 0.0007, 0.0009, 0.001] # For relu, lrelu and elu (overflow if lr too high)
+
+etas = [0.0001,0.0005,0.001,0.005] # Used for sigmoid
+#etas = [0.005,0.001,0.005,0.01,0.05,0.1] # Used for scikit
+#etas = [0.0001,0.0003, 0.0005, 0.0007, 0.0009, 0.001] # Used for relu, lrelu and elu
 lambdas = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]
 
 
@@ -359,7 +365,7 @@ ax.set_title("Train $r^2$ error gridsearch for Sigmoid activation")
 ax.set_xlabel("$\lambda$")
 ax.set_ylabel("$\eta$")
 plt.show()
-"""
+
 # Scikit mse
 mse_df_test = pd.DataFrame(mse_grid_test_scikit, index = etas, columns = lambdas)
 fig, ax = plt.subplots(figsize = (7, 7))
@@ -379,31 +385,9 @@ ax.set_ylabel("$\eta$")
 plt.show()
 
 
-# Gridsearch of neurons and layers
-neurons = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-layers = [1, 2, 3, 4]
-mse_grid_test = np.zeros((len(neurons), len(layers)))
-for i in range(len(neurons)):
-    for j in range(len(layers)):
-        nn = NN(X_train, X_test, z_train, z_test, layers[j], neurons[j], "ELU", "He")
-        nn.train(200, 10, 0.0005, 1e-6)
-        print("Neurons: ", neurons[i])
-        print("Layers: ", layers[j])
-        z_pred_test = nn.predict(X_test)
-        mse_grid_test[i,j] = mean_squared_error(z_test,z_pred_test)
-        print(mse_grid_test[i,j])
-        print("")
-
-mse_df_test = pd.DataFrame(mse_grid_test, index = neurons, columns = layers)
-fig, ax = plt.subplots(figsize = (7, 7))
-sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.4f')
-ax.set_title("Test error gridsearch")
-ax.set_xlabel("layers")
-ax.set_ylabel("neurons")
-plt.show()
-
 
 # Comparison of Xavier and Random initialisation with Sigmoid activation
+
 nn_sig_xav = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
 nn_sig_rand = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Random")
 nn_sig_xav.train(200, 10, 0.001, 1e-6)
@@ -432,7 +416,9 @@ plt.title('$r^2$ score with different weight initialization')
 plt.show()
 
 
+
 # comparison of Sigmoid, Relu, leaku Relu and Elu activation
+
 nn_sig_xav = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "Sigmoid", "Xavier")
 nn_relu_he = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "RELU", "He")
 nn_lrelu_he = NN(X_train, X_test, z_train, z_test, n_hidden_layers, n_hidden_neurons, "leaky-RELU", "He")
@@ -485,4 +471,28 @@ plt.xlabel('epochs')
 plt.ylabel('$r^2 score$')
 plt.title('$r^2$ score as function of epochs: Comparison of different activations')
 plt.show()
-"""
+
+
+# Gridsearch of neurons and layers
+
+neurons = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+layers = [1, 2, 3, 4]
+mse_grid_test = np.zeros((len(neurons), len(layers)))
+for i in range(len(neurons)):
+    for j in range(len(layers)):
+        nn = NN(X_train, X_test, z_train, z_test, layers[j], neurons[j], "ELU", "He")
+        nn.train(200, 10, 0.0005, 1e-6)
+        print("Neurons: ", neurons[i])
+        print("Layers: ", layers[j])
+        z_pred_test = nn.predict(X_test)
+        mse_grid_test[i,j] = mean_squared_error(z_test,z_pred_test)
+        print(mse_grid_test[i,j])
+        print("")
+
+mse_df_test = pd.DataFrame(mse_grid_test, index = neurons, columns = layers)
+fig, ax = plt.subplots(figsize = (7, 7))
+sns.heatmap(mse_df_test, annot=True, ax=ax, cmap="viridis_r", fmt='.4f')
+ax.set_title("Test error gridsearch")
+ax.set_xlabel("layers")
+ax.set_ylabel("neurons")
+plt.show()

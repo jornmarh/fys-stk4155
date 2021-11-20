@@ -52,15 +52,14 @@ class Sdg:
         self.theta_gd = beta
         ytilde_gd = self.X_train @ self.theta_gd
         mse = mean_squared_error(self.y_train, ytilde_gd)
-        print(mse)
         return mse
 
     def stocastichGD_ols(self, algo='normalsgd', gamma=0.01, beta=0.9, eps=1e-8, schedule=False, decay=1e-6):
         np.random.seed(64)
         theta = np.random.randn(self.X_train.shape[1])
 
-        # RMSprop term
-        s = np.random.normal(1,0.15,self.X_train.shape[1]) # Must be initially positive
+        # RMSprop second moment term
+        s = np.random.normal(1,0.15,self.X_train.shape[1])
 
         # Momentum velocity term
         v = np.random.randn(self.X_train.shape[1])
@@ -83,6 +82,7 @@ class Sdg:
             self.ytilde_sgd_ols = self.X_test @ theta
             mse_sgd_ols = mean_squared_error(self.y_test, self.ytilde_sgd_ols)
             r2_sgd_ols = r2_score(self.y_test, self.ytilde_sgd_ols)
+
             return mse_sgd_ols, r2_sgd_ols
 
         elif algo == "momentum":
@@ -104,6 +104,7 @@ class Sdg:
             self.ytilde_sgd_ols = self.X_test @ theta
             mse_sgd_ols = mean_squared_error(self.y_test, self.ytilde_sgd_ols)
             r2_sgd_ols = r2_score(self.y_test, self.ytilde_sgd_ols)
+
             return mse_sgd_ols, r2_sgd_ols
 
         elif algo == "rmsprop":
@@ -124,6 +125,7 @@ class Sdg:
             self.ytilde_sgd_ols = self.X_test @ theta
             mse_sgd_ols = mean_squared_error(self.y_test, self.ytilde_sgd_ols)
             r2_sgd_ols = r2_score(self.y_test, self.ytilde_sgd_ols)
+
             return mse_sgd_ols, r2_sgd_ols
 
 
@@ -132,7 +134,7 @@ class Sdg:
         np.random.seed(64)
         theta = np.random.randn(self.X_train.shape[1])
 
-        # RMSprop term
+        # RMSprop second moment term
         s = np.random.normal(1,0.15,self.X_train.shape[1]) # Must be initially positive
 
         # SGD velocity term
@@ -159,10 +161,7 @@ class Sdg:
             self.epochs.append(epoch)
             self.mse.append(mse_sgd_ridge)
             self.r2.append(r2_sgd_ridge)
-            print("mse: ", mse_sgd_ridge)
-            print("lmd: ", lmd)
-            print("eta: ", self.eta)
-            print("")
+
             return mse_sgd_ridge, r2_sgd_ridge
 
         elif algo == "momentum":
@@ -187,7 +186,7 @@ class Sdg:
                 self.epochs.append(epoch)
                 self.mse.append(mse_sgd_ridge)
                 self.r2.append(r2_sgd_ridge)
-                print(mse_sgd_ridge)
+
                 return mse_sgd_ridge, r2_sgd_ridge
 
         elif algo == "rmsprop":
@@ -211,7 +210,7 @@ class Sdg:
             self.epochs.append(epoch)
             self.mse.append(mse_sgd_ridge)
             self.r2.append(r2_sgd_ridge)
-            print(mse_sgd_ridge)
+
             return mse_sgd_ridge, r2_sgd_ridge
 
 
@@ -244,7 +243,7 @@ class Franke:
 
     def scale(self, X, z):
         X_train, X_test, z_train, z_test = train_test_split(X,z)
-        scaler = StandardScaler(with_mean=False) # Utilizing scikit's standardscaler
+        scaler = StandardScaler(with_mean=False) # Remove intercept before scaling 
         scaler_x = scaler.fit(X_train) # Scaling x-data
         X_train = scaler_x.transform(X_train)
         X_test = scaler_x.transform(X_test)
