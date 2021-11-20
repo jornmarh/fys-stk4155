@@ -5,6 +5,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
+import seaborn as sns
+import pandas as pd
 
 def sigmoid(x):
     return 1/(1+np.exp(-x))
@@ -39,12 +41,10 @@ def predict(X_test, weights):
             prediction[i] = 1
     return prediction
 
-def sgd_logreg(X_train, y_train):
+def sgd_logreg(X_train, y_train, eta, lmd):
     n = X_train.shape[1]
     n_epochs = 200
     M = 10
-    lmd = 1e-1
-    eta = 1e-2
     weights = np.random.randn(n)
     for i in range(n_epochs):
         mini_batches = create_miniBatches(X_train, y_train, M)
@@ -63,20 +63,85 @@ targets = cancer_data.target
 scaler = StandardScaler()
 X = scaler.fit(X).transform(X)
 
+
+#Heatmap
+n_epochs = 200
+M = 10
+etas = [1e-4, 1e-3, 1e-2, 5e-2, 1e-1]
+lambdas = [1e-8, 1e-6, 1e-4, 1e-1, 1]
+
+k=10
+kfold = KFold(n_splits = k, shuffle=True)
+
+score_own_cvd = np.zeros(k)
+score_own_train_cvd = np.zeros(k)
+score_scikit_cvd = np.zeros(k)
+score_scikit_train_cvd = np.zeros(k)
+
+acc_grid_own = np.zeros((len(etas), len(lambdas)))
+acc_grid_own_train = np.zeros((len(etas), len(lambdas)))
+acc_grid_scikit = np.zeros((len(etas), len(lambdas)))
+acc_grid_scikit_train = np.zeros((len(etas), len(lambdas)))
+
+sns.set()
+
+i = 0
+for eta in etas:
+    j = 0
+    for lmd in lambdas:
+        cv_split = 0
+        for train_indexes, test_indexes in kfold.split(X):
+            X_train = X[train_indexes]
+            X_test = X[test_indexes]
+            t_train = targets[train_indexes]
+            t_test = targets[test_indexes]
+
+            #acc_own = accuracy_score(t_test, predict(X_test, sgd_logreg(X_train, t_train, eta, lmd))); print('Own:     split: {}, score: {}'.format(cv_split, acc_own))
+            #acc_own_train = accuracy_score(t_train, predict(X_train, sgd_logreg(X_train, t_train, eta, lmd))); print('Own:     split: {}, score: {}'.format(cv_split, acc_own_train))
+
+            #score_own_cvd[cv_split] = acc_own
+            #score_own_train_cvd[cv_split] = acc_own_train
+
+
+            cv_split += 1
+
+        #accuracy_own = np.mean(score_own_cvd)
+        #acc_grid_own[i][j] = accuracy_own
+
+        #accuracy_own_train = np.mean(score_own_train_cvd)
+        #acc_grid_own_train[i][j] = accuracy_own_train
+
+
+        j+= 1
+    i += 1
+test = pd.DataFrame(acc_grid_own_train, index = etas, columns = lambdas)
+fig, ax = plt.subplots()
+sns.heatmap(test, annot=True, ax=ax, cmap='viridis', fmt='.4f')
+ax.set_title('Test data accuracy score')
+ax.set_xlabel(r'$\lambda$')
+ax.set_ylabel(r'$\eta$')
+plt.show()
+
+#Test data
+'''
 k = 10
 kfold = KFold(n_splits = k, shuffle=True)
 scores_scikit = np.zeros(k)
 scores_own = np.zeros(k)
 cv_split = 0
+
+lmd = 1e-3
+eta = 1e-1
+
 for train_indexes, test_indexes in kfold.split(X):
     X_train = X[train_indexes]
     X_test = X[test_indexes]
     t_train = targets[train_indexes]
     t_test = targets[test_indexes]
 
-    acc_own = accuracy_score(t_test, predict(X_test, sgd_logreg(X_train, t_train))); print('Own:     split: {}, score: {}'.format(cv_split, acc_own))
+    acc_own = accuracy_score(t_test, predict(X_test, sgd_logreg(X_train, t_train, eta, lmd))); print('Own:     split: {}, score: {}'.format(cv_split, acc_own))
 
-    clf = SGDClassifier(loss='log', penalty='l2', max_iter=200)
+    clf = SGDClassifier(loss='log', penalty='l2', max_iter=200, alpha=lmd, eta0=eta)
     clf.fit(X_train, t_train)
     predict_scikit = clf.predict(X_test)
     acc_scikit = accuracy_score(t_test, predict_scikit)
@@ -90,34 +155,4 @@ for train_indexes, test_indexes in kfold.split(X):
 score_scikit = np.mean(scores_scikit)
 score_own = np.mean(scores_own)
 print('Score from own method: {}, score from scikit-learn: {}'.format(score_own, score_scikit))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''for epoch in range(n_epochs):
-    mini_batches = create_miniBatches(X, targets, 10)
-    for mini_batch in mini_batches:
-        xi,yi = mini_batch
-        t = xi @ theta
-        costfunction = yi.dot(t) - np.log( 1 + np.exp(t))
-        #print(costfunction)
-        costfunction = -np.sum(costfunction)
-        p = sigmoid(t)
-        g = - xi.T @ (yi - p) #dC/dB, obtained from the maximum likelihood estimation
-
-        if (costfunction) < (costfunction_best):
-            costfunction_best = costfunction
-            best_theta = theta
-
-        theta -= eta*g'''
+'''
