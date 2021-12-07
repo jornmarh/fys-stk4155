@@ -1,0 +1,293 @@
+
+copy and paste to plot data.
+My apologies for the messy format!
+
+------------------------------------------------------------------------------
+        BAR GRAPH DATA
+------------------------------------------------------------------------------
+clf = MLPClassifier(activation="relu", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_unscaled_relu = accuracy_score(t_test, t_predict)
+
+clf = MLPClassifier(activation="logistic", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_unscaled_sigmoid = accuracy_score(t_test, t_predict)
+
+
+scaler = StandardScaler()  # Utilizing scikit's standardscaler
+scaler_x = scaler.fit(X_train)  # Scaling x-data
+X_train = scaler_x.transform(X_train)
+X_test = scaler_x.transform(X_test)
+
+clf = MLPClassifier(activation="relu", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_scaled_relu = accuracy_score(t_test, t_predict)
+print(acs_scaled_relu)
+
+clf = MLPClassifier(activation="logistic", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_scaled_sigmoid = accuracy_score(t_test, t_predict)
+print(acs_scaled_sigmoid)
+
+inputs = X
+temp1=np.reshape(inputs[:,1],(len(inputs[:,1]),1))
+temp2=np.reshape(inputs[:,2],(len(inputs[:,2]),1))
+X=np.hstack((temp1,temp2))
+temp=np.reshape(inputs[:,5],(len(inputs[:,5]),1))
+X=np.hstack((X,temp))
+temp=np.reshape(inputs[:,8],(len(inputs[:,8]),1))
+X=np.hstack((X,temp))
+print(X.shape)
+del temp1,temp2,temp
+
+X_train, X_test, t_train, t_test = train_test_split(X,targets, test_size=0.2)
+scaler = StandardScaler()  # Utilizing scikit's standardscaler
+scaler_x = scaler.fit(X_train)  # Scaling x-data
+X_train = scaler_x.transform(X_train)
+X_test = scaler_x.transform(X_test)
+
+clf = MLPClassifier(activation="relu", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_dim_relu = accuracy_score(t_test, t_predict)
+
+clf = MLPClassifier(activation="logistic", solver="sgd", max_iter = 100, random_state=64)
+clf.fit(X_train, t_train)
+t_predict = clf.predict(X_test)
+acs_dim_sigmoid = accuracy_score(t_test, t_predict)
+
+fig = plt.figure()
+data = ['Original', 'Scaled', 'Reduced dimensonality']
+acs_relu = [acs_unscaled_relu, acs_scaled_relu, acs_dim_relu]
+acs_sigmoid = [acs_unscaled_sigmoid, acs_scaled_sigmoid, acs_dim_sigmoid]
+plt.bar(data, acs_relu)
+plt.bar(data, acs_sigmoid)
+plt.ylabel('Accuracy score')
+plt.legend(labels=['RELU', 'Sigmoid'])
+plt.title("Comparrison of Original, scaled and dimension reduced data")
+plt.show()
+
+
+--------------------------------------------------------------------------------
+                              Epochs test of etas
+--------------------------------------------------------------------------------
+np.random.seed(2021) #Random seed
+
+#Load cancer data from scikit-learn
+cancer_data = load_breast_cancer()
+X = cancer_data.data
+targets = cancer_data.target
+scaler = StandardScaler()
+X = scaler.fit(X).transform(X)
+
+
+# Defining the neural network
+n_hidden_neurons = 50
+n_hidden_layers = 1
+activation = "Sigmoid"
+initialization = "Xavier"
+
+n_epochs = 200
+M = 10
+etas = [1e-4, 1e-3, 1e-2, 1e-1]
+_lambda = 1e-7
+
+
+k = 10
+kfold = KFold(n_splits = k, shuffle=True)
+
+score_own_cvd = np.zeros(k)
+score_scikit_cvd = np.zeros(k)
+cv_split = 0
+
+scores_cvd = []
+
+learning_rates = []
+acs_learning_rate = []
+for eta in etas:
+    for train_indexes, test_indexes in kfold.split(X):
+        X_train = X[train_indexes]
+        X_test = X[test_indexes]
+        t_train = targets[train_indexes]
+        t_test = targets[test_indexes]
+
+        network1 = NN(X_train, X_test, t_train, t_test, n_hidden_layers, n_hidden_neurons, activation, initialization)
+        acs_epochs = network1.train(n_epochs, M, eta, _lambda)
+        pred = network1.predict(X_test)
+        acs_own = accuracy_score(t_test, pred)
+
+        '''
+        clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=_lambda, learning_rate_init=eta)
+        clf.fit(X_train, t_train)
+        t_predict = clf.predict(X_test)
+        acs_scikit = accuracy_score(t_test, t_predict)
+        '''
+
+        scores_cvd.append(acs_epochs)
+        score_own_cvd[cv_split] = acs_own
+        #score_scikit_cvd[cv_split] = acs_scikit
+
+        cv_split += 1
+
+    cvd_averges_epochs = np.asarray(scores_cvd)
+
+    accuracy_epochs = np.mean(cvd_averges_epochs, axis=0)
+    accuracy_own = np.mean(score_own_cvd); print("Own DNN: ", accuracy_own)
+    #accuracy_scikit = np.mean(score_scikit_cvd); print("Scikit DNN: ",accuracy_scikit)
+    learning_rates.append(eta)
+    acs_learning_rate.append(accuracy_epochs)
+    cv_split = 0
+
+epochs = np.arange(1, n_epochs+1)
+plt.plot(epochs, acs_learning_rate[0], label=r'$\eta = {}$'.format(learning_rates[0]))
+plt.plot(epochs, acs_learning_rate[1], label=r'$\eta = {}$'.format(learning_rates[1]))
+plt.plot(epochs, acs_learning_rate[2], label=r'$\eta = {}$'.format(learning_rates[2]))
+plt.plot(epochs, acs_learning_rate[3], label=r'$\eta = {}$'.format(learning_rates[3]))
+plt.ylim(0.8, 1)
+#plt.xlim(85,125)
+plt.ylabel("Accuracy score")
+plt.xlabel("Iterations(epochs)")
+plt.title("Accuracy score for increasing iterations")
+plt.legend()
+plt.show()
+
+
+-------------------------------------------------------------------------------
+                                  CROSS-VALIDATION
+-------------------------------------------------------------------------------
+# Defining the neural network
+n_hidden_neurons = 50
+n_hidden_layers = 1
+activation = "Sigmoid"
+initialization = "Xavier"
+
+n_epochs = 200
+M = 10
+eta = 5e-1
+_lambda = 1e-1
+
+k = 10
+kfold = KFold(n_splits = k, shuffle=True)
+
+score_own_cvd = np.zeros(k)
+score_scikit_cvd = np.zeros(k)
+cv_split = 0
+
+scores_cvd = []
+
+for train_indexes, test_indexes in kfold.split(X):
+    X_train = X[train_indexes]
+    X_test = X[test_indexes]
+    t_train = targets[train_indexes]
+    t_test = targets[test_indexes]
+
+    network1 = NN(X_train, X_test, t_train, t_test, n_hidden_layers, n_hidden_neurons, activation, initialization)
+    acs_epochs = network1.train(n_epochs, M, eta, _lambda)
+    scores_cvd.append(acs_epochs)
+    pred = network1.predict(X_test)
+    acs_own = accuracy_score(t_test, pred)
+    score_own_cvd[cv_split] = acs_own
+
+
+    clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=_lambda, learning_rate_init=eta)
+    clf.fit(X_train, t_train)
+    t_predict = clf.predict(X_test)
+    acs_scikit = accuracy_score(t_test, t_predict)
+    score_scikit_cvd[cv_split] = acs_scikit
+
+
+    cv_split += 1
+
+cvd_averges_epochs = np.asarray(scores_cvd); accuracy_epochs = np.mean(cvd_averges_epochs, axis=0)
+accuracy_own = np.mean(score_own_cvd); print("Own DNN: ", accuracy_own)
+accuracy_scikit = np.mean(score_scikit_cvd); print("Scikit DNN: ",accuracy_scikit)
+
+--------------------------------------------------------------------------------
+                                    HEATMAP
+--------------------------------------------------------------------------------
+# Defining the neural network
+n_hidden_neurons = 50
+n_hidden_layers = 1
+activation = "Sigmoid"
+initialization = "Xavier"
+
+n_epochs = 200
+M = 10
+etas = [1e-4, 1e-3, 1e-2, 5e-2, 1e-1]
+lambdas = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
+
+kfold = KFold(n_splits = k, shuffle=True)
+
+score_own_cvd = np.zeros(k)
+score_own_train_cvd = np.zeros(k)
+score_scikit_cvd = np.zeros(k)
+score_scikit_train_cvd = np.zeros(k)
+
+
+acc_grid_own = np.zeros((len(etas), len(lambdas)))
+acc_grid_own_train = np.zeros((len(etas), len(lambdas)))
+acc_grid_scikit = np.zeros((len(etas), len(lambdas)))
+acc_grid_scikit_train = np.zeros((len(etas), len(lambdas)))
+sns.set()
+
+i = 0
+for eta in etas:
+    j = 0
+    for lmd in lambdas:
+        cv_split = 0
+        for train_indexes, test_indexes in kfold.split(X):
+            X_train = X[train_indexes]
+            X_test = X[test_indexes]
+            t_train = targets[train_indexes]
+            t_test = targets[test_indexes]
+
+            #network1 = NN(X_train, X_test, t_train, t_test, n_hidden_layers, n_hidden_neurons, activation, initialization)
+            #network1.train(n_epochs, M, eta, lmd)
+
+            #pred = network1.predict(X_test)
+            #acs_own = accuracy_score(t_test, pred)
+            #score_own_cvd[cv_split] = acs_own
+
+            #pred_train = network1.predict(X_train)
+            #acs_own_train = accuracy_score(t_train, pred_train)
+            #score_own_train_cvd[cv_split] = acs_own_train
+
+            clf = MLPClassifier(activation="logistic", solver="sgd", max_iter=n_epochs, hidden_layer_sizes=(n_hidden_neurons), batch_size=M, alpha=lmd, learning_rate_init=eta)
+            clf.fit(X_train, t_train)
+
+            #t_predict = clf.predict(X_test)
+            #acs_scikit = accuracy_score(t_test, t_predict)
+            #score_scikit_cvd[cv_split] = acs_scikit
+
+            t_predict_train = clf.predict(X_train)
+            acs_scikit_train = accuracy_score(t_train, t_predict_train)
+            score_scikit_train_cvd[cv_split] = acs_scikit_train
+
+            cv_split += 1
+
+        #accuracy_own = np.mean(score_own_cvd); print("eta, lambda: ({}, {}): Own DNN test: {}".format(eta,lmd,accuracy_own))
+        #acc_grid_own[i][j] = accuracy_own
+
+        #accuracy_own_train = np.mean(score_own_train_cvd); print("itr ({}, {}): Own DNN train: {}".format(i,j,accuracy_own_train))
+        #acc_grid_own_train[i][j] = accuracy_own_train
+
+        #accuracy_scikit = np.mean(score_scikit_cvd); print("itr ({}, {}): Scikit DNN: {}".format(i,j,accuracy_scikit))
+        #acc_grid_scikit[i][j] = accuracy_scikit
+
+        accuracy_scikit_train = np.mean(score_scikit_train_cvd); print("itr ({}, {}): Scikit DNN train: {}".format(i,j,accuracy_scikit_train))
+        acc_grid_scikit_train[i][j] = accuracy_scikit_train
+
+
+        j+= 1
+    i += 1
+test = pd.DataFrame(acc_grid_scikit_train, index = etas, columns = lambdas)
+fig, ax = plt.subplots()
+sns.heatmap(test, annot=True, ax=ax, cmap='viridis', fmt='.4f', vmax=1, vmin=0.95)
+ax.set_title('Train data accuracy score')
+ax.set_xlabel(r'$\lambda$')
+ax.set_ylabel(r'$\eta$')
+plt.show()
