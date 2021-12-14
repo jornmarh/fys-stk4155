@@ -1,0 +1,5 @@
+AdaBoost 
+
+Adaboost combines weak learners consisting of stumps (dTtree with single node and two leaves) to make a forest, the order is important. While in tForest every tree har equal vote, the results of one stump in Adaboost determine the vote of the next stump in adaboost. 
+
+Initial sample weight to account for misslcassification is 1/n_samples. Every sample get this weight initially. 

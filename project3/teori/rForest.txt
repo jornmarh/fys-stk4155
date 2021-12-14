@@ -1,0 +1,8 @@
+Bagging: Bootstraping the data and aggregating the trees (statquest rForest part 1). ̈́
+Works by bootstrapping data with replacement, then create a random tree with only a random subset of features. Only consider the subset of features at each node. So if the root node decide between for example 2 features, then all subsequent nodes must also be split/considered for 2 new features. 
+
+To evaluate a random forest we test on the out-of-bag-data that did not make it into the bootstapped dataset due to replacement. This leads us to the out-of-bag error, where we evaluate the sum of all out-of-bag samples from all the trees/bootstraps). 
+
+The final part of random forest is to optimize the model based on the number of variables used per step. Typically we start with n = sqrt(n_features) and try values sligtly higher/lower before picking the most accurate model. The accuracy is again determined based on the out-of-bag error. 
+
+

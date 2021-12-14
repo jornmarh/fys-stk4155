@@ -1,0 +1,11 @@
+Boosting: 
+
+Regression is easy, you set f_0(x) = 0, optimze a parameter beta and gamma by dC/dbeta and dC/dgamma. And update f_m by f_m = f_m-1 + beta*b_m(x;gamma) for every m in M iterations. For classification you have to add a new layer to assign weights to data that are missclassified. 
+
+Classification: 
+	- AdaBoost: puts emphasis on missclassified events. 
+1. Assign same weight to all classifications w_i = 1/m. 
+
+We assign a classifier f_m(x) = f_m-1(x) + beta_m*f_m(x;gamma)
+
+

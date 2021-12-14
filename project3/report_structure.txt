@@ -1,0 +1,28 @@
+struktur på rapport:
+
+- Introduksjon
+
+- Teori:
+	- Basics behind decision trees, bagging(random forest) and boosting(Adaboost and Gradient boosting)
+
+- Metode:
+	- Datasett: 
+		- Hvordan er datasettet laget?
+		- Hva består det av?
+		- Hvordan forbreder jeg det til analyse? Scaling, nan elementes, balance, splitting, etc?
+	- Metodologi:
+		- Hvilke tester gjør jeg?
+		- Hvordan vurder jeg resultatene? 
+		- Hvordan er metoden min? 
+
+Resultater:
+	- Single decision tree
+	- Random forrest, anent baggin?
+	- Adaboost, XDBoost. 
+	- Vis resultater gjennom acc score, confusion matrix, andre figurer, tabeller? 
+	- Sammenlign med neural network for eks. 
+	Bias variance tradeoff. 
+Diskusjon:
+	- Litteratur
+	- Metoder vs metoder
+	- 
