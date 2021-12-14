@@ -39,3 +39,10 @@ Forth part of the project: (For discussion/Conclusion)
 
 Do some sort of overfitting analysis, for instance bias variance tradeoff, or based on the pruning parameter alfa with a plot of train vs test data as a function of alpha. 
 
+Methods:
+- Single decision tree
+- Bagging
+- Random forest
+- AdaBoost
+- XDGboost
+
