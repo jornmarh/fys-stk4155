@@ -1,0 +1,31 @@
+	Adaboost and XGBoost
+	
+Adaboost
+Best Params 
+ {'learning_rate': 0.5, 'n_estimators': 50}
+Score from best params:  0.9817508417508417
+XGboost
+Best Params 
+ {'learning_rate': 0.05, 'n_estimators': 100}
+Score from best params:  0.977979797979798
+
+Accuracy score
+Default models
+AdaBoost = 0.8985507246376812
+xgBoost = 0.9565217391304348
+Optimized models
+AdaBoost = 0.9130434782608695
+xgBoost = 0.9565217391304348
+Cross-validation
+Default modes
+Ada: 0.8041176470588235
+XGB: 0.9736974789915968
+optimized models
+Ada: 0.9560504201680672
+XGB: 0.9794957983193278
+
+AdaBoost
+Bias = 0.043478260869565216, var = 0.03768115942028985
+XGBBoost
+Bias = 0.057971014492753624, var = 0.015072463768115942
+

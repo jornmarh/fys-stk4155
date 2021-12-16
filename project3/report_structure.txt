@@ -3,7 +3,14 @@ struktur på rapport:
 - Introduksjon
 
 - Teori:
-	- Basics behind decision trees, bagging(random forest) and boosting(Adaboost and Gradient boosting)
+	-  The theory behind the methods used in this project (Focus on nice structure, easy 										to follow
+		-  Single decision tree
+		- Bagging
+			- Random forest
+		- Boosting
+			- Adaboost
+			- XGboost
+	- A brief summary of the evaluation metrics (accuracy score, confusion matrix, ROC, 									cumalative gain etc)
 
 - Metode:
 	- Datasett: 
@@ -14,14 +21,19 @@ struktur på rapport:
 		- Hvilke tester gjør jeg?
 		- Hvordan vurder jeg resultatene? 
 		- Hvordan er metoden min? 
+		- Cross validation til å finne parametere av treet, slikt som str, min size, max_size etc.
+		- 
 
 Resultater:
 	- Single decision tree
-	- Random forrest, anent baggin?
-	- Adaboost, XDBoost. 
+	- Bagging 
+	- Random forrest
+	- Adaboost
+	- XGBoost. 
 	- Vis resultater gjennom acc score, confusion matrix, andre figurer, tabeller? 
 	- Sammenlign med neural network for eks. 
-	Bias variance tradeoff. 
+	- Bias variance tradeoff.
+	- Husk å cross-validate resultatene, og teste med ulike parametere.  
 Diskusjon:
 	- Litteratur
 	- Metoder vs metoder

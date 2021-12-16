@@ -1,0 +1,19 @@
+	Random forest
+Accuracy score: 0.9420289855072463
+Feature importance: 
+ bill_length       0.402088
+flipper_length    0.358670
+bill_depth        0.190245
+body_mass         0.048998
+dtype: float64
+No handles with labels found to put in legend.
+Cross validated score: 0.9794957983193278
+best depth = 6, best score = 0.982436974789916 (with CVD)
+Random forest score (w/best depth): 0.9420289855072463
+Bagging score (w/best depth): 0.927536231884058
+Bagging score = 0.9765546218487395 (with best depth & CVD)
+Bias-variance tradeoff:
+Random forest
+bias = 0.057971014492753624, var = 0.025072463768115946
+Bagging
+bias = 0.08695652173913043, var = 0.028985507246376812

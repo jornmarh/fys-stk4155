@@ -1,0 +1,11 @@
+	Single decsion tree
+
+Accuracy 0.9130434782608695
+Depth = 5, n_leaves = 9
+best depth = 6, best score = 0.9765546218487394 (with CVD)
+Best alpha = 0.00202020202020202, best score = 0.9765546218487394
+Optimized tree
+0.9130434782608695
+With cvd: 0.9736134453781512
+bias = 0.07246376811594203, var = 0.039130434782608685
+

@@ -46,3 +46,27 @@ Methods:
 - AdaBoost
 - XDGboost
 
+
+
+Results: 
+	- Single decsion tree:
+		- Optimization V
+		- Accuracy score V
+		- Confusion matrix V
+		- Cumaltive gain curve V
+		- ROC curve V
+		- Precision-recall curve V
+		- Bias variance tradeoff
+		- Remember to cross-validate V
+		- Visualize tree
+			
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
