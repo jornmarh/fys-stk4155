@@ -17,6 +17,7 @@ from sklearn import tree
 import graphviz
 from mlxtend.evaluate import bias_variance_decomp
 from sklearn.preprocessing import LabelEncoder
+import dataframe_image as dfi
 
 def find_best(model, variables, type='depth'):
     i=0
@@ -27,7 +28,7 @@ def find_best(model, variables, type='depth'):
             clf = RandomForestClassifier(n_estimators=200, max_depth=v)
         elif (model=="Decisiontree"):
             if (type=='a'):
-                clf = DecisionTreeClassifier(criterion='gini', max_depth=None, ccp_alpha=v)
+                clf = DecisionTreeClassifier(criterion='gini', max_depth=6, ccp_alpha=v)
             else:
                 clf = DecisionTreeClassifier(criterion='gini', max_depth=v)
         elif (model=='Adaboost'):
@@ -144,26 +145,27 @@ def tree(X_train, X_test, y_train, y_test):
 
     depths = [1,2,3,4,5,6,7,8,9,10]
     best_depth, best_score = find_best("Decisiontree", depths)
-    print("best depth = {}, best score = {} (with CVD)".format(best_depth, best_score))
+    print("best depth = {}".format(best_depth))
 
     #Pruning the tree
     alphas = np.linspace(0,0.1,100)
     best_alpha, best_score = find_best("Decisiontree", alphas, 'a')
-    print("Best alpha = {}, best score = {}".format(best_alpha, best_score))
+    print("Best alpha = {}".format(best_alpha))
 
     #Plot/print results
     treemodel = DecisionTreeClassifier(max_depth=best_depth, ccp_alpha=best_alpha)
     y_pred, y_proba, depth, leaves = decisonTree(treemodel, X_train, X_test, y_train, y_test)
 
     print("Optimized tree")
-    print(accuracy_score(y_test, y_pred))
+    print("Accuracy score: ", accuracy_score(y_test, y_pred))
     print("With cvd: {}".format(np.mean(cross_val_score(treemodel, body, penguins, cv=10))))
+    #treemodel.fit(X_train, y_train); training_pred = treemodel.predict(X_train)
+    #print("Training data score: {}".format(accuracy_score(y_train, training_pred)))
 
     plots(y_test, y_pred, y_proba)
 
     bias, var = bias_var("Decisiontree", X_train, X_test, y_train, y_test, n_rounds=100, best_estimator=best_depth,m_depth=10)
     print("bias = {}, var = {}".format(bias, var))
-
 
 def forest(X_train, X_test, y_train, y_test):
     results = randomForest(X_train, X_test, y_train, y_test)
@@ -178,20 +180,25 @@ def forest(X_train, X_test, y_train, y_test):
     plt.legend()
     plt.show()
 
-    acc_cvd =  np.mean(cross_val_score(RandomForestClassifier(n_estimators=100), body, penguins, cv=10))
+    acc_cvd = np.mean(cross_val_score(RandomForestClassifier(n_estimators=100), body, penguins, cv=10))
     print("Cross validated score: {}".format(acc_cvd))
 
     depths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     best_depth, best_score = find_best("Randomforest", depths)
-    print("best depth = {}, best score = {} (with CVD)".format(best_depth, best_score))
+    print("best depth = {}".format(best_depth))
 
     rForest = randomForest(X_train, X_test, y_train, y_test, n=100, m=best_depth)
     print("Random forest score (w/best depth): {}".format(accuracy_score(y_test, rForest[0])))
+    print("With cross-validation: {}".format(np.mean(cross_val_score(RandomForestClassifier(n_estimators=100, max_depth=best_depth), body, penguins, cv=10))))
+    rforestModel = RandomForestClassifier(n_estimators=100, max_depth=best_depth).fit(X_train, y_train); training_pred = rforestModel.predict(X_train)
+    print("Training data score: {}".format(accuracy_score(y_train, training_pred)))
 
     bagForest = bagging(X_train, X_test, y_train, y_test, n=100, m=best_depth)
     print("Bagging score (w/best depth): {}".format(accuracy_score(y_test, bagForest[0])))
     acc_cvd_bagging = np.mean(cross_val_score(BaggingClassifier(DecisionTreeClassifier(max_depth=best_depth), n_estimators=100), body, penguins, cv=10))
     print("Bagging score = {} (with best depth & CVD)".format(acc_cvd_bagging))
+    #baggingModel = BaggingClassifier(DecisionTreeClassifier(max_depth=best_depth), n_estimators=100).fit(X_train, y_train); training_pred = baggingModel.predict(X_train)
+    #print("Training data score: {}".format(accuracy_score(y_train, training_pred)))
 
     #Plots
     y_pred, y_proba, fi = randomForest(X_train, X_test, y_train, y_test, n=100, m=best_depth)
@@ -246,6 +253,14 @@ def boosting(X_train, X_test, y_train, y_test):
     acc_cvd_ada_opt = np.mean(cross_val_score(AdaBoostClassifier(n_estimators=50, learning_rate=0.5), body, penguins, cv=10))
     acc_cvd_xgb_opt = np.mean(cross_val_score(xgb.XGBClassifier(n_estimators=100, learning_rate=0.05, verbosity=0), body, penguins, cv=10))
 
+    #Print training predictions
+    #train_clf_ada = AdaBoostClassifier(n_estimators=50, learning_rate=0.5).fit(X_train, y_train)
+    #train_clf_xgb = xgb.XGBClassifier(n_estimators=100, learning_rate=0.05, verbosity=0).fit(X_train, y_train)
+    #train_pred_ada = train_clf_ada.predict(X_train)
+    #train_pred_xgb = train_clf_xgb.predict(X_train)
+    #print("Training ada: {}".format(accuracy_score(y_train, train_pred_ada)))
+    #print("Training xgb: {}".format(accuracy_score(y_train, train_pred_xgb)))
+
     print("Accuracy score")
     print("Default models")
     print("AdaBoost = {}".format(accuracy_score(y_test, results_ada[0])))
@@ -267,6 +282,8 @@ def boosting(X_train, X_test, y_train, y_test):
 
 np.random.seed(2021)
 data = load_penguins()
+#dfi.export(data.head(), "penguin_describe.png")
+
 print("Overview")
 print("Features: \n", data.columns, "\n")
 print("Header")
@@ -291,12 +308,13 @@ print("Class count: \n", input.groupby('species').count(), "\n")
 
 body = input.iloc[:, :-1]
 penguins = input.iloc[:, -1]
+#dfi.export(body.head(), "penguins.png")
 
 attribute_names=['bill_length', 'bill_depth', 'flipper_length', 'body_mass']
 target_names=['Adelie', 'Chinstrap', 'Gentoo']
 
 X_train, X_test, y_train, y_test = train_test(body, penguins, out=True)
 
-tree(X_train, X_test, y_train, y_test)
-forest(X_train, X_test, y_train, y_test)
+#tree(X_train, X_test, y_train, y_test)
+#forest(X_train, X_test, y_train, y_test)
 boosting(X_train, X_test, y_train, y_test)
