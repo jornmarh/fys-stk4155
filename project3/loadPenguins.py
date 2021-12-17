@@ -19,6 +19,15 @@ from sklearn.preprocessing import LabelEncoder
 import dataframe_image as dfi
 
 def find_best(model, variables, type='depth'):
+    '''
+    This is a function to find the optimal value of a model, that could be
+    the learning rate, max_depth, or other. The argumets of this function is:
+    1) the model to optimize in stringformat, for example "Decisiontree"
+    2) A list of variables, for max_depth this could be [1,2,3,4,5]
+    3) An optional parameter, type. This is for model="Decisiontree",
+        type="a" means optimze pruning parameter
+    The function returns the best variable in the set, and corresponding score for that variable
+    '''
     i=0
     best_score=0
     best_variable=0
@@ -40,6 +49,12 @@ def find_best(model, variables, type='depth'):
     return best_variable, best_score
 
 def train_test(predictors, targets, size=0.2, out=None):
+    '''
+    This method is used for generating a train test split of the data,
+    using scikit-learns StratifiedShuffleSplit method
+    The arguments are
+    4) out: set to True to print information about the split
+    '''
     split = StratifiedShuffleSplit(n_splits=1, test_size=size)
     for train_index, test_index in split.split(predictors, targets):
         predictors_train = predictors.loc[train_index]
@@ -54,12 +69,25 @@ def train_test(predictors, targets, size=0.2, out=None):
     return predictors_train, predictors_test, targets_train, targets_test
 
 def plots(y_test, y_pred, y_proba):
+    '''
+    Takes test data, predictions and probabilities from a model to plot the
+    confusion matrix, precision_recall curbes and roc.
+    '''
     skplt.metrics.plot_confusion_matrix(y_test, y_pred, normalize=True)
     skplt.metrics.plot_precision_recall(y_test, y_proba)
     skplt.metrics.plot_roc(y_test, y_proba)
     plt.show()
 
 def bias_var(model, X_train, X_test, y_train, y_test, n_rounds, best_estimator=None, m_depth=12):
+    '''
+    This function returns the bias and variance of the model, along with a plot
+    as a function of the tree depth.
+    The targets are label encoded with scikits LabelEncoder
+    arguments are
+    6) n_rounds = number of bootstrap for the bias_var tradeoff
+    7) best_estimator = (optional) what tree depth to return bias and var from
+    8) m_depth = (optional) max value for depth the analysis is done for
+    '''
     le = LabelEncoder()
     le.fit(y_train)
     y_train = le.transform(y_train)
@@ -136,7 +164,13 @@ def xgboost(X_train, X_test, y_train, y_test, n=100, eta=0.3, m=3):
     y_proba = clf.predict_proba(X_test)
     return y_pred, y_proba
 
+
 def tree(X_train, X_test, y_train, y_test):
+    '''
+    Model to perfrom analysis of a single tree
+    Remove comments to print training score
+    Plots confusion matrix, precision_recall, roc, bias, var
+    '''
     treemodel = DecisionTreeClassifier()
     y_pred, y_proba, depth, leaves = decisonTree(treemodel, X_train, X_test, y_train, y_test)
     print("Accuracy", accuracy_score(y_test, y_pred))
@@ -167,6 +201,11 @@ def tree(X_train, X_test, y_train, y_test):
     print("bias = {}, var = {}".format(bias, var))
 
 def forest(X_train, X_test, y_train, y_test):
+    '''
+    Function for performing analysis of bagging and random forest
+    The first set of plots are for random forest, second is bagging
+    Remove coments to print training predictions
+    '''
     results = randomForest(X_train, X_test, y_train, y_test)
     y_pred, y_proba, feature_importance = results
     print("Accuracy score: {}".format(accuracy_score(y_test, y_pred)))
@@ -215,7 +254,18 @@ def forest(X_train, X_test, y_train, y_test):
     print("bias = {}, var = {}".format(bias_b, var_b))
 
 def boosting(X_train, X_test, y_train, y_test):
+    '''
+    Analysis of adaboost and xgboost
+    comment in gridSearch() and tradeoff() to do these
+    Comment in to print training data predictions
+    Plots results first for adaboost, then xgBoost
+    Can ignore warnings during run
+    '''
+
     def gridSearch():
+        '''
+        Do gridsearch for n_estimators and learning rate, takes some time
+        '''
         param_grid = {'n_estimators': [10,20,30,40,50,60,70,80,90,100,110, 120, 130, 140, 150]
                                         , 'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10]}
         grid_ada = GridSearchCV(AdaBoostClassifier(), param_grid)
@@ -231,6 +281,9 @@ def boosting(X_train, X_test, y_train, y_test):
         print("Score from best params: ", grid_xg.best_score_)
 
     def tradeoff():
+        '''
+        Perfoms bias-var tradeoff, takes some time.
+        '''
         bias_ada, var_ada = bias_var("Ada", X_train, X_test, y_train, y_test, n_rounds=100, best_estimator=2, m_depth=10)
         bias_xgb, var_xgb = bias_var("XGB", X_train, X_test, y_train, y_test, n_rounds=100, best_estimator=2, m_depth=10)
         print("AdaBoost")
@@ -314,6 +367,9 @@ target_names=['Adelie', 'Chinstrap', 'Gentoo']
 
 X_train, X_test, y_train, y_test = train_test(body, penguins, out=True)
 
+'''
+Comment in to do either tree, forest or boosting analysis
+'''
 #tree(X_train, X_test, y_train, y_test)
 #forest(X_train, X_test, y_train, y_test)
-boosting(X_train, X_test, y_train, y_test)
+#boosting(X_train, X_test, y_train, y_test)
