@@ -14,7 +14,6 @@ import scikitplot as skplt
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report
 from sklearn import tree
-import graphviz
 from mlxtend.evaluate import bias_variance_decomp
 from sklearn.preprocessing import LabelEncoder
 import dataframe_image as dfi
